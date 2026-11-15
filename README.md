@@ -1,7 +1,7 @@
 # Bolt Climb
 
 Game platformer pixel-art vô tận: robot Bolt leo từ Trái Đất tới hố đen, cùng người bạn Pip.
-Một file `index.html` + thư mục `assets/`. Chạy bằng web server tĩnh bất kỳ (GitHub Pages, Vercel, `python3 -m http.server`).
+Cấu trúc: `index.html` (markup), `css/style.css`, `js/audio.js` (âm thanh procedural), `js/i18n.js` (VI/EN), `js/game.js` (game), `assets/` (fonts, ui, characters, shields, platforms, backgrounds, objects). Chạy bằng web server tĩnh bất kỳ (GitHub Pages, Vercel, `python3 -m http.server`).
 
 ## Thư mục sprite
 

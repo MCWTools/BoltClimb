@@ -534,7 +534,14 @@ const W={rows:new Map(),mainX:[WW/2],pending:new Map(),col:new Set(),seedI:0,gen
 let SEED='';
 function rowRng(r,salt){return mulberry((W.seedI^Math.imul(r+1,0x9E3779B1)^Math.imul(salt+7,0x85EBCA6B))>>>0)}
 function resetWorld(seed){W.pipC=null;W.stab=new Set();SEED=seed;W.rows=new Map();W.mainX=[WW/2];W.pending=new Map();W.col=new Set();W.seedI=hashStr(seed);W.genMax=-1}
-function rowKW(r){const z=zoneOfRow(r),R=rowRng(r,3);let kind=z.kinds[Math.floor(R()*z.kinds.length)];let w=RW[kind]||[24,32,32,40][Math.floor(R()*4)];if(kind==='cloud')w=[28,40,52,64][Math.floor(R()*4)];const stn=COOLROWS.has(r)||isRepRow(r)||isPortRow(r);if(stn){kind='metal';w=48}else{const zi2=zoneIdx(r);if([0,2,3,5].includes(zi2)&&r%7!==3&&kind!=='cloud'){const q=R();if(q<0.2){kind='ramp';w=[40,48,64][Math.floor(R()*3)]}}}return{kind,w}}
+/* ---------- noise: n1 = noise mượt vô hạn theo độ cao (chọn loại object theo vùng), n2 = noise nhị phân thưa (quyết định chỗ đặt) ---------- */
+const CELL=84,P2=0.5;
+function h32(a,b,c){let h=(Math.imul(a|0,0x27d4eb2d)^Math.imul(b|0,0x165667b1)^Math.imul(c|0,0x9E3779B1))>>>0;h=Math.imul(h^(h>>>15),0x85ebca6b);h=Math.imul(h^(h>>>13),0xc2b2ae35);return((h^(h>>>16))>>>0)/4294967296}
+function vnoise(x,y,sx,sy,salt){const fx=x/sx,fy=y/sy,ix=Math.floor(fx),iy=Math.floor(fy),tx=fx-ix,ty=fy-iy,ux=tx*tx*(3-2*tx),uy=ty*ty*(3-2*ty),sd=W.seedI^salt,a=h32(ix,iy,sd),b=h32(ix+1,iy,sd),c=h32(ix,iy+1,sd),d=h32(ix+1,iy+1,sd);return a+(b-a)*ux+(c-a)*uy+(a-b-c+d)*ux*uy}
+function n1(x,rowf){const v=0.6*vnoise(x,rowf,160,7,0x1A2B)+0.4*vnoise(x,rowf,70,2.6,0x3C4D);return clamp((v-0.5)*1.9+0.5,0,1)}
+function pickKind(zi,n){const ks=ZONES[zi].kinds;return ks[Math.min(ks.length-1,Math.floor(n*ks.length))]}
+function n2c(x,r,salt,p){return h32(Math.floor(x/CELL),r,W.seedI^salt)<p}
+function rowKW(r){const z=zoneOfRow(r),R=rowRng(r,3);const kx=r>=1&&W.mainX[r-1]!==undefined?W.mainX[r-1]:WW/2;R();let kind=pickKind(zoneIdx(r),n1(kx,r));let w=RW[kind]||[24,32,32,40][Math.floor(R()*4)];if(kind==='cloud')w=[28,40,52,64][Math.floor(R()*4)];const stn=COOLROWS.has(r)||isRepRow(r)||isPortRow(r);if(stn){kind='metal';w=48}else{const zi2=zoneIdx(r);if([0,2,3,5].includes(zi2)&&r%7!==3&&kind!=='cloud'){const q=R();if(q<0.2){kind='ramp';w=[40,48,64][Math.floor(R()*3)]}}}return{kind,w}}
 function ensureMain(n){while(W.mainX.length<=n){const i=W.mainX.length,z=zoneOfRow(i),R=rowRng(i,1);const kw=rowKW(i);let minD=14;if(THICK.has(kw.kind))minD=Math.max(14,(kw.w+(i>1?rowKW(i-1).w:40))/2+10);const mag=minD+R()*Math.max(0,z.dx-minD),sg=R()<0.5?-1:1;let x=W.mainX[i-1]+sg*mag;if(x<50||x>WW-50)x=W.mainX[i-1]-sg*mag;W.mainX.push(clamp(x,50,WW-50))}}
 function newPlat(t,x,y,w,main){return{k:'plat',t,x,y,w,h:PH[t]||8,top:y+(PTOP[t]||0),main:!!main,thick:THICK.has(t),solidNow:true,a:1,vis:1,stand:0,off:0,hot:0,stage:0,dx:0,dy:0}}
 function genRow(r){
@@ -544,6 +551,7 @@ const objs=[];
 if(r===0){objs.push({k:'ground',x:-300,y:0,w:WW+600,h:400,solid:true});W.rows.set(r,objs);return}
 const zi=zoneIdx(r),z=ZONES[zi],R=rowRng(r,2),mx=W.mainX[r],y=-r*ROW_H;
 const cool=COOLROWS.has(r),rep=isRepRow(r)&&!cool,pr=isPortRow(r),station=cool||rep||pr;
+const PRE=[];for(let q=Math.max(1,r-3);q<r;q++){const o=W.rows.get(q);if(o)for(const t of o)if(t.k!=='coin'&&t.k!=='ground')PRE.push(t)}
 const kw=rowKW(r);let kind=kw.kind,w=kw.w;let exX=-999;
 const m=newPlat(kind,mx-w/2,y,w,true);
 if(kind==='ramp'){const q4=rowRng(r,4);m.sl=(q4()<0.5?-1:1)*[0.18,0.28,0.38][Math.floor(q4()*3)];m.zs=zi>=2?1:0;m.y=y-m.sl*w/2;m.top=m.y}else if(kind==='stairs'){const q4=rowRng(r,4);m.sdir=q4()<0.5?-1:1;m.ns=w/12;m.sh=5+Math.floor(q4()*3);m.y=y+Math.round((m.ns-1)*m.sh/2);m.top=m.y}else{const q4=rowRng(r,4);m.sl=pr?0:station?(q4()<0.5?-0.07:0.07):tilt(q4);m.y=y-m.sl*w/2;m.top=m.y}
@@ -566,28 +574,34 @@ if(R()<0.4&&!m.drift)objs.push({k:'coin',x:mx-5,y:y-22,w:10,h:10,id:ci(0)});
 if(R()<0.5){const nx=W.mainX[r+1];if(Math.abs((mx+nx)/2-nx)>rowKW(r+1).w/2+10)objs.push({k:'coin',x:(mx+nx)/2-5,y:y-ROW_H*0.7-5,w:10,h:10,id:ci(2)})}
 
 
-if(R()<0.55){const side=R()<0.5?-1:1;let x2=clamp(mx+side*(64+R()*40),30,WW-30);let okE=true;for(let q=r-1;q<=r+2;q++)if(Math.abs(W.mainX[q]-x2)<46)okE=false;for(let rr=r-3;rr<r;rr++){const ol=rr>=1?W.rows.get(rr):null,ld=ol&&ol.find(q=>q.k==='ladder');if(ld){const ss=(r-rr)*ROW_H;if(ss<=ld.h){const lx=ld.x0+ld.lean*ld.dxL*ss/ld.h;if(Math.abs(lx-x2)<40)okE=false}}}if(okE){const w2=24+Math.floor(R()*2)*8;let k2=z.kinds[Math.floor(R()*z.kinds.length)];let sl2=0,sd2=1,ns2=4,sh2=6;if([0,2,3,5].includes(zi)&&R()<0.4){if(R()<0.6){k2='ramp';sl2=(R()<0.5?-1:1)*[0.18,0.28,0.38][Math.floor(R()*3)]}else{k2='stairs';sd2=R()<0.5?-1:1;ns2=3+Math.floor(R()*2);sh2=5+Math.floor(R()*2)}}
-let stS=side;if(k2==='stairs'){stS=W.mainX[r+1]>=mx?-1:1;if(W.mainX[r-1]!==undefined&&Math.abs(W.mainX[r-1]-(mx+stS*(w/2+ns2*6)))<ns2*6+22)k2='plank';x2=clamp(mx+stS*(w/2+ns2*6),30,WW-30);sd2=stS>0?1:-1;if([r-1,r+1,r+2].some(q=>Math.abs(W.mainX[q]-x2)<ns2*6+22))k2='plank'}
-const ww2=k2==='ramp'?[40,48,64][Math.floor(R()*3)]:k2==='stairs'?ns2*12:k2==='cloud'?[28,40,52,64][Math.floor(R()*4)]:(RW[k2]||w2);const y2=y+Math.round((R()-0.5)*12);const p2=newPlat(k2,x2-ww2/2,y2,ww2,false);if(k2==='cloud'){p2.fade=R()<0.7;p2.cv=Math.floor(R()*4);if(zi===1&&R()<0.5)p2.drift={cx:x2,amp:20+R()*14,sp:0.4+R()*0.5,ph:R()*6.28}}if(k2==='ramp'){p2.sl=sl2;p2.zs=zi>=2?1:0;p2.y=y2-sl2*ww2/2;p2.top=p2.y}else if(k2==='stairs'){p2.sdir=sd2;p2.ns=ns2;p2.sh=sh2;p2.y=topAt(m,mx+stS*w/2);p2.top=p2.y}else{const sl=tilt(R);p2.sl=sl;p2.y=y2-sl*ww2/2;p2.top=p2.y}
-if(k2==='plank'||k2==='pipe'||k2==='scaffold'){const qq=R();if(zi<=1&&(r>=45)&&qq<0.3){p2.crum=1;p2.cs=0;p2.cst=0;p2.ct=0}else if(zi<=1&&qq<0.55&&k2!=='scaffold'){p2.sag=5;p2.sgc=0}}objs.push(p2);exX=x2;
-if(R()<0.7)objs.push({k:'coin',x:x2-5,y:topAt(p2,x2)-20,w:10,h:10,id:ci(1)});
-let hasSp=false;if(R()<0.12&&k2!=='hot'&&k2!=='cloud'&&k2!=='ramp'&&k2!=='stairs'){hasSp=true;objs.push({k:'spring',x:x2-8,y:topAt(p2,x2)-8,w:16,h:10,t:0,sl:p2.sl})}if(!hasSp&&ww2>=32&&k2!=='hot'&&k2!=='cloud'&&k2!=='ramp'&&k2!=='stairs'&&R()<z.hz*2.5)objs.push({k:'spikes',x:side>0?p2.x+ww2-12:p2.x,y:topAt(p2,(side>0?p2.x+ww2-12:p2.x)+6)-8,w:12,h:8,n:3,sl:p2.sl})}}
 if(R()<z.hz*0.9){const sd=R()<0.5?-1:1;for(const s2 of [sd,-sd]){const sx=clamp(mx+s2*(80+R()*20),24,WW-24);let okS=Math.abs(exX-sx)>=50;for(let q=r-1;q<=r+1;q++)if(Math.abs(W.mainX[q]-sx)<62)okS=false;if(okS){objs.push({k:'saw',x:sx-7,y:y-27,w:14,h:14,cx:sx,cy:y-20,id:ci(5)});break}}}
-if(zi<=3&&R()<0.18){const side=R()<0.5?-1:1,wx=clamp(mx+side*(84+R()*30),20,WW-34);let ok=true;for(let q=r-1;q<=r+1;q++){if(q>=0&&Math.abs(W.mainX[q]-(wx+7))<58)ok=false}
+if(zi<=3&&n2c(mx,r,0x5A1,0.2)){const side=R()<0.5?-1:1,wx=clamp(mx+side*(84+R()*30),20,WW-34);let ok=true;for(let q=r-1;q<=r+1;q++){if(q>=0&&Math.abs(W.mainX[q]-(wx+7))<58)ok=false}
 if(ok){const pk=newPlat('plank',wx-10,y-36,34,false),sl=tilt(R);if(zi===0){const dl=Math.ceil(Math.abs(sl)*7)+3;objs.push({k:'wall',x:wx,y:y-36+dl,w:14,h:36-dl,solid:true,climb:true});pk.sl=sl;pk.y=y-36-sl*17;pk.top=pk.y;objs.push(pk)}}}
 if(zi===0&&r%7===3&&R()<0.55){let done=false;for(let t=0;t<6&&!done;t++){const nr=1+Math.floor(R()*3),hL=nr*ROW_H,ln=R()<0.5?-1:1,dxL=[0,16,28,40,54][Math.floor(R()*5)],xt=mx+ln*dxL;if(xt<24||xt>WW-24)continue;let ok=true;for(let j=1;j<nr;j++){const xj=mx+ln*dxL*j/nr;if(Math.abs(xj-W.mainX[r+j])<rowKW(r+j).w/2+22)ok=false}
 if(r+nr>=120)ok=false;{const wt=rowKW(r+nr).w,dd=Math.abs(xt-W.mainX[r+nr]);if(!(dd<=wt/2-8||dd>=wt/2+22))ok=false}
 if(!ok)continue;done=true;(W.stab||(W.stab=new Set())).add(r+nr);objs.push({k:'ladder',x0:mx,y0:y,h:hL,lean:ln,dxL,x:Math.min(mx,xt)-8,y:y-hL,w:dxL+16});if(Math.abs(xt-W.mainX[r+nr])>rowKW(r+nr).w/2-8){const pk=newPlat('plank',xt-14,y-hL,28,false),sl=tilt(R)*0;pk.sl=sl;pk.y=y-hL-sl*14;pk.top=pk.y;objs.push(pk)}}}
 }
-if(!station&&zi<=8&&r>=3){const Rf=rowRng(r,14),nF=zi<=1?1:2;for(let fi=0;fi<nF;fi++){if(Rf()>=(zi===0?0.5:0.55))continue;const ks=z.kinds.filter(k=>k!=='brick'&&k!=='hot'&&k!=='scaffold'&&k!=='ramp'&&k!=='stairs'),k3=ks[Math.floor(Rf()*ks.length)],w3=RW[k3]||(k3==='cloud'?[28,40,52,64][Math.floor(Rf()*4)]:[24,32,40][Math.floor(Rf()*3)]),x3c=30+Rf()*(WW-60),y3=y+Math.round((Rf()-0.5)*26);
-if(Math.abs(x3c-mx)<m.w/2+w3/2+18)continue;let bad=false;for(const q of objs){if(q.k==='coin'||q.k==='ground')continue;const qw=q.w||0,qy0=(q.y||0)-Math.abs((q.sl||0)*qw)-3,qy1=(q.y||0)+(q.h||10)+Math.abs((q.sl||0)*qw)+3;if(x3c-w3/2-6<q.x+qw&&x3c+w3/2+6>q.x&&y3-12<qy1&&y3+20>qy0)bad=true}
-if(bad||x3c-w3/2<8||x3c+w3/2>WW-8)continue;const f=newPlat(k3,x3c-w3/2,y3-(PTOP[k3]||0),w3,false);if(k3==='cloud'){f.fade=Rf()<0.7;f.cv=Math.floor(Rf()*4);if(zi===1&&Rf()<0.4)f.drift={cx:x3c,amp:18+Rf()*14,sp:0.4+Rf()*0.5,ph:Rf()*6.28}}else if(/^(rock|moonrock)/.test(k3)){f.by=f.y;if(Rf()<0.6)f.spin={amp:0.05+Rf()*0.2,w:0.25+Rf()*0.4,ph:Rf()*6.28}}f.top=f.y+(PTOP[k3]||0);objs.push(f);if(Rf()<0.45)objs.push({k:'coin',x:x3c-5,y:y3-22,w:10,h:10,id:fi?-ci(7):ci(7)})}}
+if(!station&&zi<=8&&r>=3){const Cy=r>>1,hs=W.seedI;
+const free=(x0,x1,y0,y1)=>{for(const q of objs.concat(PRE)){if(q.k==='coin'||q.k==='ground')continue;const qw=q.w||0,sl=q.sl||0,ya=Math.min(q.y,q.y+sl*qw)-3,yb=Math.max(q.y,q.y+sl*qw)+(q.h||10)+3;let ex=0;if(q.drift)ex=q.drift.amp||0;if(q.orbit)ex=q.orbit.r||0;if(q.pass)ex=70;if(x0<q.x+qw+ex+6&&x1>q.x-ex-6&&y0<yb&&y1>ya)return false}
+for(let q=r-2;q<=r+1;q++){if(q<1)continue;const a2=W.mainX[q],b2=W.mainX[q+1],wa=rowKW(q).w,wb=rowKW(q+1).w,c0=Math.min(a2-wa/2,b2-wb/2)-28,c1=Math.max(a2+wa/2,b2+wb/2)+28,y0c=-q*ROW_H-ROW_H-30,y1c=-q*ROW_H+10;if(x0<c1&&x1>c0&&y0<y1c&&y1>y0c)return false}
+return true};
+for(let cx=0;cx<5;cx++){if(!(h32(cx,Cy,hs^0x2F1)<P2))continue;if(((h32(cx,Cy,hs^0x7A3)*2)|0)!==(r&1))continue;
+const Rx=rowRng(r,40+cx),x3c=(cx+0.12+0.76*h32(cx,Cy,hs^0x9B5))*CELL;if(x3c<32||x3c>WW-32)continue;
+const k3=pickKind(zi,n1(x3c,r+0.5)),w3=RW[k3]||(k3==='cloud'?[28,40,52,64][Math.floor(Rx()*4)]:[24,32,40][Math.floor(Rx()*3)]),y3=y+Math.round((Rx()-0.5)*28);
+if(x3c-w3/2<8||x3c+w3/2>WW-8)continue;if(!free(x3c-w3/2,x3c+w3/2,y3-16,y3+(PH[k3]||8)+16))continue;
+const f=newPlat(k3,x3c-w3/2,y3-(PTOP[k3]||0),w3,false);
+if(k3==='cloud'){f.fade=Rx()<0.7;f.cv=Math.floor(Rx()*4);if(zi===1&&Rx()<0.4)f.drift={cx:x3c,amp:18+Rx()*14,sp:0.4+Rx()*0.5,ph:Rx()*6.28}}
+else if(/^(rock|moonrock)/.test(k3)){f.by=f.y;if(Rx()<0.6)f.spin={amp:0.05+Rx()*0.2,w:0.25+Rx()*0.4,ph:Rx()*6.28}}
+else if((k3==='plank'||k3==='pipe')&&zi<=1&&r>=45&&Rx()<0.25){f.crum=1;f.cs=0;f.cst=0;f.ct=0}
+f.top=f.y+(PTOP[k3]||0);objs.push(f);exX=x3c;
+if(Rx()<0.5)objs.push({k:'coin',x:x3c-5,y:y3-22,w:10,h:10,id:ci(3+cx)});
+if(k3!=='hot'&&k3!=='cloud'){if(Rx()<0.1)objs.push({k:'spring',x:x3c-8,y:topAt(f,x3c)-8,w:16,h:10,t:0,sl:f.sl});else if(w3>=32&&Rx()<z.hz*2.2)objs.push({k:'spikes',x:x3c-6,y:topAt(f,x3c)-8,w:12,h:8,n:3,sl:f.sl})}}}
 if(!station&&zi>=2&&zi<=8&&r>=6){const Ro=rowRng(r,15),qo=Ro();if(qo<0.1){objs.push({k:'laser',x:mx-24,y:y-36,w:48,h:3,per:2.4+Ro()*0.8,on:0.9+Ro()*0.4,ph:Ro()*3})}else if(qo<0.2&&zi>=3){objs.push({k:'drone',cx:clamp(mx+(Ro()-0.5)*40,50,WW-50),x:mx,y:y-50-Ro()*10,w:14,h:10,amp:30+Ro()*16,sp:0.9+Ro()*0.6,ph:Ro()*6.28})}}
-if(!station&&zi<=5&&r>=3&&!m.drift&&!m.orbit&&!m.flick&&!m.crum&&kind!=='ramp'&&kind!=='stairs'){const Rb=rowRng(r,13);if(Rb()<0.24){const sd0=Rb()<0.5?-1:1,L=104+Math.floor(Rb()*5)*8,slA=ROW_H/L,bt=zi===0?'chain':zi===1?'rope':'glass',aw=zi===1?28:24;
+if(!station&&zi<=5&&r>=3&&!m.drift&&!m.orbit&&!m.flick&&!m.crum&&kind!=='ramp'&&kind!=='stairs'){const Rb=rowRng(r,13);if(n2c(mx,r,0x3B7,0.28)){const sd0=Rb()<0.5?-1:1,L=104+Math.floor(Rb()*5)*8,slA=ROW_H/L,bt=zi===0?'chain':zi===1?'rope':'glass',aw=zi===1?28:24;
 const ovl=(a0,a1,b0,b1)=>a0<b1&&b0<a1;
 for(const sd of [sd0,-sd0]){const edge=mx+sd*m.w/2,topE=topAt(m,edge),xF=edge+sd*L,xa=sd>0?xF-2:xF-aw+2,xs0=Math.min(edge,xa),xs1=Math.max(edge,xa+aw);
 if(xs0<14||xs1>WW-14)continue;let bad=false;const yT=topE-ROW_H-14,yB=topE+14;
-for(const q of objs){if(q===m)continue;if(q.k==='coin'||q.k==='ground')continue;const qw=q.w||0,qy0=(q.y||0)-Math.abs((q.sl||0)*qw)-2,qy1=(q.y||0)+(q.h||10)+Math.abs((q.sl||0)*qw)+2;if(q.k==='ladder'){if(ovl(q.x-6,q.x+q.w+6,xs0,xs1)&&ovl(q.y,q.y+q.h,yT,yB))bad=true;continue}if(ovl(q.x-4,q.x+qw+4,xs0,xs1)&&ovl(qy0,qy1,yT,yB))bad=true}
+for(const q of objs.concat(PRE)){if(q===m)continue;if(q.k==='coin'||q.k==='ground')continue;const qw=q.w||0,qy0=(q.y||0)-Math.abs((q.sl||0)*qw)-2,qy1=(q.y||0)+(q.h||10)+Math.abs((q.sl||0)*qw)+2;if(q.k==='ladder'){if(ovl(q.x-6,q.x+q.w+6,xs0,xs1)&&ovl(q.y,q.y+q.h,yT,yB))bad=true;continue}if(ovl(q.x-4,q.x+qw+4,xs0,xs1)&&ovl(qy0,qy1,yT,yB))bad=true}
 const nm=W.mainX[r+1],nw=rowKW(r+1).w;if(ovl(nm-nw/2-8,nm+nw/2+8,xs0-6,xs1+6))bad=true;const n0=W.mainX[r-1],nw0=rowKW(r-1).w;if(r>1&&ovl(n0-nw0/2-8,n0+nw0/2+8,xs0-6,xs1+6)&&Math.abs(W.rows.has(r-1)?0:0)>1)bad=true;
 if(bad)continue;
 const b=newPlat(bt,sd>0?edge:edge-L,sd>0?topE:topE-ROW_H,L,false);b.sl=sd>0?-slA:slA;b.top=b.y;objs.push(b);
@@ -1166,7 +1180,7 @@ if(sa>0){cx.fillStyle='#ffffff';for(const m of mets){const t=(T+m.ph)%m.per;if(t
 drawBodies(h,zi,u);
 // city skyline & bg clouds
 if(h<5000){const a=clamp(1-h/5000,0,1);cx.globalAlpha=a*0.9;for(const b of city){const bx=Math.round(b.x-cam.x*0.2),by=Math.round(VH-30+h*0.12-b.h*0+ (cam.y*0));const top=VH+(h*0.12)-b.h-20;cx.fillStyle='#7aa8c8';cx.fillRect(bx,Math.round(top),Math.round(b.w),Math.round(b.h+60));cx.fillStyle='#9cc6e0';for(let wy=0;wy<b.h;wy+=10)for(let wx=3;wx<b.w-3;wx+=7)cx.fillRect(bx+wx,Math.round(top)+wy+4,2,3)}cx.globalAlpha=1}
-{const ca=clamp((330-rf)/60,0,1)*0.5;if(ca>0){const cs=S('bgcl',32,12,p=>cloudDraw(p,'#eaf4ff','#c4dbf0'));cx.globalAlpha=ca;for(const c of bgClouds){const y=VH*0.6+(-c.h-(camY+VH*0.6))*c.p;if(y<-c.s*12||y>VH+10)continue;const x=((c.x-cam.x*0.3+T*c.v+windX*0.05)%1000+1000)%1000-160;cx.drawImage(cs,Math.round(x),Math.round(y),32*c.s,12*c.s)}cx.globalAlpha=1}}
+{const ca=clamp((330-rf)/60,0,1)*0.5;if(ca>0){const cs=S('bgcl',32,12,p=>cloudDraw(p,'#eaf4ff','#c4dbf0'));cx.globalAlpha=ca;for(const c of bgClouds){const y=VH*0.6+(-c.h-(camY+VH*0.6))*c.p;if(y<-c.s*12||y>VH+10)continue;const x=((c.x-cam.x*0.3+T*c.v+windX*0.05)%1000+1000)%1000-32*c.s;cx.drawImage(cs,Math.round(x),Math.round(y),32*c.s,12*c.s)}cx.globalAlpha=1}}
 {// satellites
 const sat=S('sat',28,18,p=>{p.r(0,6,9,6,'#1d3a8a');p.r(3,6,1,6,'#4d7cff');p.r(6,6,1,6,'#4d7cff');p.o(0,6,9,6,'#c9ced8');p.r(19,6,9,6,'#1d3a8a');p.r(22,6,1,6,'#4d7cff');p.r(25,6,1,6,'#4d7cff');p.o(19,6,9,6,'#c9ced8');p.r(9,8,1,2,'#9aa6bd');p.r(18,8,1,2,'#9aa6bd');p.r(10,5,8,8,'#c9ced8');p.r(11,6,6,2,'#ffd23f');p.r(11,9,6,3,'#8d99a8');p.o(10,5,8,8,K);p.r(13,2,2,3,'#9aa6bd');p.r(12,0,4,2,'#eef2f8')});
 for(const d of sats){const sy=d.y-camY,sx=d.x-camX;if(sy<-40||sy>VH+60||sx<-40||sx>VW+40)continue;
@@ -1179,7 +1193,7 @@ if(gTop<VH){const g=grassSpr();cx.fillStyle='#7a4a2b';cx.fillRect(0,gTop+16,VW,V
 const r0=Math.max(1,Math.floor((-(camY+VH))/ROW_H)-3),r1=Math.ceil((-camY)/ROW_H)+3;
 for(let r=r0;r<=r1;r++){const objs=W.rows.get(r);if(!objs)continue;
 for(const o of objs){const ox=Math.round(o.x-camX),oy=Math.round(o.y-camY);
-if(ox>VW+40||ox<-60)continue;
+if(ox>VW+40||ox+(o.w||0)+70<0)continue;
 switch(o.k){
 case 'plat':{if(o.vis===0)break;let cdx=0,cdy=0,cal=1;if(o.crum){if(o.cs===1){const c=o.ct;cal=c<0.6?1-c/0.6:(c>3.9?(c-3.9)/0.6:0);cdy=c<0.6?Math.round(c*c*60):0;if(cal<=0)break}else if(o.cst>0.12){cdx=Math.round(Math.sin(T*70))}}
 const px2=ox+cdx,py2=oy+cdy;cx.globalAlpha=cal;if(o.t==='hot'){drawSh(hotSpr(o.w,o.stage,T),px2,py2-8,o.sl||0,0)}else{const sp=platSpr(o,T);if(o.fade){cx.globalAlpha=cal*o.a*(o.stand>0.5?(Math.floor(T*14)%2?1:0.6):1)}else if(o.flick)cx.globalAlpha=cal*o.vis;const jx=o.fade&&o.stand>0.3?Math.round(Math.sin(T*70)*Math.min(1.5,o.stand*1.5)):0;drawSh(sp,px2+jx,py2+poff(o),RAMPY.has(o.t)?0:(o.sl||0),0);

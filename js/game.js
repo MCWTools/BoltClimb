@@ -452,7 +452,7 @@ return {ok,txt}}
 function botPrompt(){const B=BOT;if(mode!=='play'||ufoBusy()||B.away)return null;if(P.carried)return{l:'Xuống'};if(!botNearP())return null;
 if(B.st==='sleep')return{l:'Đánh thức Pip'};if(B.st==='broken')return{l:B.carried?'Thả Pip':'Cõng Pip'};if(B.carried)return{l:'Thả Pip'};
 if(B.st==='live'&&(P.parts.leg||nBroken()>=3))return{l:'Nhờ Pip cõng'};return null}
-function dropPlayer(){const B=BOT;P.carried=false;B.mission='';B.plan=null;B.spdm=1;B.jmul=1;P.x=B.x+B.face*6;P.y=B.y;P.vx=P.vy=0;P.onGround=true;P.ground=B.ground;P.peakY=P.y}
+function dropPlayer(){const B=BOT;P.carried=false;B.mission='';B.plan=null;B.spdm=B.crip?0.8:1;B.jmul=B.crip?0.88:1;P.x=B.x+B.face*6;P.y=B.y;P.vx=P.vy=0;P.onGround=true;P.ground=B.ground;P.peakY=P.y}
 function botAct(){const B=BOT,pr=botPrompt();if(!pr)return false;
 if(P.carried){dropPlayer();pipSay('Xuống nhé!');return true}
 if(B.st==='sleep'){B.st='wake';B.wt=0;B.say1=B.say2=false;P.hugT=0;return true}
@@ -495,9 +495,9 @@ if(P.ground&&P.onGround&&P.ground.k==='plat'){B.pg=P.ground;B.pgx=P.x}
 if((B.pAir||0)>0.8&&!P.carried){const pr=Math.round(-P.y/ROW_H),tr=clamp(pr,br-8,br+8);let best=null,bd=1e9;for(let d=0;d<=5&&!best;d++)for(const r of(d?[tr-d,tr+d]:[tr])){const ob=W.rows.get(r);if(!ob)continue;for(const o of ob)if(o.k==='plat'&&o.main&&platOK(o,0)&&o.t!=='hot'){const dx=Math.abs(o.x+o.w/2-P.x)+Math.abs(r-tr)*12;if(dx<bd){bd=dx;best=o}}}if(best&&best!==B.ground)return{plat:best,x:clamp(P.x,best.x+4,best.x+best.w-4)}}
 if(!B.pg)return null;return{plat:B.pg,x:noSpk(B.pg,clamp(P.x-P.face*18,B.pg.x+4,B.pg.x+B.pg.w-4))}}
 function noSpk(pl,x){const ob=W.rows.get(Math.round(-(pl.y||0)/ROW_H))||[];const sp=[];for(const o of W.rows.get(pl.r)||ob)if(o.k==='spikes'&&Math.abs(o.y+8-topAt(pl,o.x+6))<12)sp.push(o);for(const o of sp)if(x>o.x-8&&x<o.x+(o.w||12)+8){const l=o.x-9,r2=o.x+(o.w||12)+9;const okL=l>=pl.x+4,okR=r2<=pl.x+pl.w-4;if(okL&&(!okR||x-l<r2-x))x=l;else if(okR)x=r2}return x}
-function botBreak(){const B=BOT;B.hp=0;B.st='broken';B.dieT=45;B.plan=null;B.shOn=false;B.vx=0;B.rk=false;B.fly=false;B.lad=null;if(P.carried)dropPlayer();pipSay('Mình... hỏng rồi...');emit(14,B.x,B.y-10,90,'#ffe066',0.6,200)}
-function botFallHurt(n,w){const B=BOT;if(B.invT>0||B.st!=='live')return;B.hl=(B.hl||'')+' fall'+(w|0)+'@r'+Math.round(-B.y/ROW_H);B.hp-=n;B.invT=1.2;emit(10,B.x,B.y-6,70,'#ffe066',0.4,120);if(B.hp<=0)botBreak();else pipSay(n>1?'Ái da!':'Á!')}
-function botHurt(sx){const B=BOT;if(B.invT>0)return;if(sx!==undefined)B.vx=B.x<sx?-90:90;if(P.carried){dropPlayer();pipSay('Á! Tự đi nhé!')}B.hp--;B.invT=2;B.vy=-110;B.onGround=false;B.ground=null;emit(8,B.x,B.y-10,80,'#ff7ad0',0.5,100);if(B.hp<=0)botBreak();else pipSay('Á!')}
+function botBreak(){const B=BOT;if(B.hp<=0&&B.crip)return;B.hp=0;B.invT=2;B.plan=null;B.shOn=false;B.rk=false;B.fly=false;B.lad=null;if(P.carried)dropPlayer();pipSay('Mình hỏng hết rồi... nhưng vẫn đi được!');emit(14,B.x,B.y-10,90,'#ffe066',0.6,200)}
+function botFallHurt(n,w){const B=BOT;if(B.invT>0||B.st!=='live')return;B.hl=(B.hl||'')+' fall'+(w|0)+'@r'+Math.round(-B.y/ROW_H);B.hp=Math.max(0,B.hp-n);B.invT=1.2;emit(10,B.x,B.y-6,70,'#ffe066',0.4,120);if(B.hp<=0)botBreak();else pipSay(n>1?'Ái da!':'Á!')}
+function botHurt(sx){const B=BOT;if(B.invT>0)return;if(sx!==undefined)B.vx=B.x<sx?-90:90;if(P.carried){dropPlayer();pipSay('Á! Tự đi nhé!')}B.hp=Math.max(0,B.hp-1);B.invT=2;B.vy=-110;B.onGround=false;B.ground=null;emit(8,B.x,B.y-10,80,'#ff7ad0',0.5,100);if(B.hp<=0)botBreak();else pipSay('Á!')}
 function botMove(dt,near,wx){const B=BOT,rf=-B.y/ROW_H,g=GRAV*gravMul(rf);
 if(B.onGround&&Math.abs(wx)>1){const sg=wx>0?1:-1;for(const o of near){if(o.k!=='laser')continue;if(B.y-14>o.y+o.h||B.y<o.y)continue;const de=sg>0?o.x-(B.x+4):(B.x-4)-(o.x+o.w);if(de<-o.w-8||de>34)continue;if(de<=0)continue;const ph=(T+o.ph)%o.per,rem=ph>=o.on?o.per-ph:0;if(rem<(de+o.w+18)/Math.max(30,Math.abs(wx))+0.3){wx=0;break}}}
 if(B.onGround&&B.ground&&B.ground.solidNow===false){B.onGround=false;B.ground=null}
@@ -517,7 +517,8 @@ if(B.rk){B.fuel-=60*dt;if(B.y<=qt-10||B.fuel<=0)B.rk=false;emit(2,B.x-B.face*5,B
 else wx=0;return wx}
 function botEmergency(near){const B=BOT;let best=null,bd=1e9;for(const o of near){if(o.k!=='plat'||!platOK(o,0))continue;const top=topAt(o,clamp(B.x,o.x,o.x+o.w));if(top<B.y-4||top>B.y+170)continue;const d=Math.abs(o.x+o.w/2-B.x)+(top-B.y)*0.5;if(d<bd){bd=d;best=o}}
 if(best){B.tgt={q:best,tx:clamp(B.x,best.x+6,best.x+best.w-6)};return true}return false}
-function botStep(dt){const B=BOT;botPlace();B.pAir=(P.onGround||P.onLadder)?0:(B.pAir||0)+dt;if(B.st==='none'||B.st==='dead')return;
+function botStep(dt){const B=BOT;botPlace();B.pAir=(P.onGround||P.onLadder)?0:(B.pAir||0)+dt;if((B.st==='broken'||B.st==='dead')&&B.placed){B.st='live';B.hp=0;B.invT=0;B.carried=false}if(B.st==='none')return;
+if(B.st==='live'){const c=B.hp<=0;if(c!==!!B.crip){B.crip=c;if(!B.carried){B.spdm=c?0.8:1;B.jmul=c?0.88:1}}}
 if(B.away){B.vx=0;B.vy=0;if(B.ground){B.x=B.ground.x+(B.gox||0);B.y=topAt(B.ground,B.x)}B.onGround=true;if(ufo.ph==='drop'||!ufoBusy()){const R1=ufo.R1||Math.round(-P.y/ROW_H);let pl=null;for(const [a,b] of [[13,19],[9,12],[3,8]]){for(let d=a;d<=b&&!pl;d++){const ob=W.rows.get(R1-d);if(ob)for(const o of ob)if(o.k==='plat'&&o.main&&platOK(o,0)&&o.t!=='hot'){pl=o;break}}if(pl)break}if(pl){B.away=false;B.ground=pl;B.onGround=true;B.x=pl.x+pl.w/2;B.y=topAt(pl,B.x);B.plan=null;B.stuck=0;B.offT=0;B.face=1;pipSay('Mình tới ngay, đợi mình leo lên!')}}else{B.face=1}return}
 const rp=Math.round(-B.y/ROW_H);if(B.st==='sleep'){if(Math.abs(rp-Math.round(-P.y/ROW_H))>60)return;B.invT=0;return}
 B.invT=Math.max(0,B.invT-dt);B.stnT-=dt;B.rpT-=dt;B.djT=Math.max(0,B.djT-dt);B.landT=Math.max(0,B.landT-dt);B.shFl=Math.max(0,B.shFl-dt);

@@ -673,13 +673,13 @@ const pr=Math.random();let sx,sy;if(pr<0.36){sx=-14;sy=10+Math.random()*(VH-80)}
 const pxs=P.x-cam.x,pys=P.y-12-cam.y;let tx,ty;if(Math.random()<0.3){tx=pxs+(Math.random()-0.5)*50;ty=pys+(Math.random()-0.5)*50}else{tx=10+Math.random()*(VW-20);ty=20+Math.random()*(VH-100)}
 let dx=tx-sx,dy=ty-sy;const L=Math.hypot(dx,dy)||1;rocks.push({ssx:sx,ssy:sy,x:0,y:0,vx:dx/L*sp,vy:dy/L*sp,r,kind,warn:0.9,age:0,v:Math.floor(Math.random()*3)})}
 function spawnBH(kind,k){const pys=P.y-12-cam.y;let sx,sy,tx,ty,sp,r,warn,vx,vy;
-{const side=Math.floor(Math.random()*4);if(side===0){sx=-16;sy=Math.random()*VH}else if(side===1){sx=VW+16;sy=Math.random()*VH}else if(side===2){sx=Math.random()*VW;sy=-16}else{sx=Math.random()*VW;sy=VH+16}
+{const side=kind==='fire'?Math.floor(Math.random()*2):Math.floor(Math.random()*4);if(side===0){sx=-16;sy=Math.random()*VH}else if(side===1){sx=VW+16;sy=Math.random()*VH}else if(side===2){sx=Math.random()*VW;sy=-16}else{sx=Math.random()*VW;sy=VH+16}
 tx=(P.x-cam.x)+(kind==='ember'?(Math.random()-0.5)*90:kind==='fire'?(Math.random()-0.5)*26:0);ty=pys+(kind==='ember'?(Math.random()-0.5)*90:kind==='fire'?(Math.random()-0.5)*26:0);
-if(kind==='fire'){sp=175+k*105+Math.random()*40;r=4.5+Math.random()*2.5+k*1.5;warn=0.7}else if(kind==='ember'){sp=65+Math.random()*40;r=2.6;warn=0.5}else{const big=Math.random()<0.55;sp=big?72+Math.random()*14:135+Math.random()*20;r=big?17+Math.random()*7:7+Math.random()*2;warn=1.6}
+if(kind==='fire'){sp=135+k*70+Math.random()*30;r=4.5+Math.random()*2.5+k*1.5;warn=1.4}else if(kind==='ember'){sp=65+Math.random()*40;r=2.6;warn=0.5}else{const big=Math.random()<0.55;sp=big?72+Math.random()*14:135+Math.random()*20;r=big?17+Math.random()*7:7+Math.random()*2;warn=1.6}
 const dx=tx-sx,dy=ty-sy,L=Math.hypot(dx,dy)||1;vx=dx/L*sp;vy=dy/L*sp}
 rocks.push({ssx:sx,ssy:sy,x:0,y:0,vx,vy,r,kind,warn,age:0,v:0,big:kind==='star'&&r>12})}
 function bhHaz(dt,rf){const d=rf-ZS[9],k=clamp((d-60)/300,0,1);let nf=0;for(const q of rocks)if(q.kind==='fire')nf++;
-fireT-=dt;if(fireT<=0){if(d>=60&&nf<(k>0.5?3:2))spawnBH('fire',k);fireT=(3.6-2.5*k)*(0.75+Math.random()*0.5)}
+fireT-=dt;if(fireT<=0){if(d>=60&&nf<(k>0.5?2:1))spawnBH('fire',k);fireT=(5.2-2.4*k)*(0.8+Math.random()*0.5)}
 if(d>=360){emberT-=dt;if(emberT<=0){spawnBH('ember',1);emberT=2.4+Math.random()*3.2}starT-=dt;if(starT<=0){spawnBH('star',1);starT=9+Math.random()*7}}}
 function hazStep(dt,rf,zi){if(zi===9)bhHaz(dt,rf);if(zi>=2&&zi!==9){astT-=dt;if(astT<=0&&rocks.length<3){spawnAst(zi);astT=([0,0,11,9,7.5,6.5,5.5,5,4.5,4][Math.min(zi,9)]||4)*(0.7+Math.random()*0.8)}}
 const cy=P.y-PH2/2;const sh=P.shOn&&(P.shK||0)>=0.34;
@@ -754,7 +754,7 @@ if(lock&&wasGround)P.vx*=0.85;
 // env
 const g0=GRAV*gravMul(rf);
 {const wn=wind(rf);windX+=wn*dt;if(!wasGround)P.vx+=wn*dt;else if(!ax)P.x=clamp(P.x+wn*0.1*dt,8,WW-8)}
-if(zi===9){const pull=18+Math.min(105,Math.max(0,rf-ZS[9])*0.32);P.vx+=Math.sign(WW*(0.8-0.3*clamp((rf-ZS[9])/360,0,1))-P.x)*pull*(wasGround?0.4:1)*dt}
+if(zi===9){const pull=32+Math.min(140,Math.max(0,rf-ZS[9])*0.45);P.vx+=Math.sign(WW*(0.8-0.3*clamp((rf-ZS[9])/360,0,1))-P.x)*pull*(wasGround?0.55:1)*dt}
 // vertical
 if(shielding){P.vx=0;P.vy=0}
 else if(P.rocketOn){P.peakY=P.y;P.vy=Math.max(P.vy-5000*dt,-290);P.vx=clamp(P.vx+ax*700*dt,-110,110);

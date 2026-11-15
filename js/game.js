@@ -673,14 +673,13 @@ const pr=Math.random();let sx,sy;if(pr<0.36){sx=-14;sy=10+Math.random()*(VH-80)}
 const pxs=P.x-cam.x,pys=P.y-12-cam.y;let tx,ty;if(Math.random()<0.3){tx=pxs+(Math.random()-0.5)*50;ty=pys+(Math.random()-0.5)*50}else{tx=10+Math.random()*(VW-20);ty=20+Math.random()*(VH-100)}
 let dx=tx-sx,dy=ty-sy;const L=Math.hypot(dx,dy)||1;rocks.push({ssx:sx,ssy:sy,x:0,y:0,vx:dx/L*sp,vy:dy/L*sp,r,kind,warn:0.9,age:0,v:Math.floor(Math.random()*3)})}
 function spawnBH(kind,k){const pys=P.y-12-cam.y;let sx,sy,tx,ty,sp,r,warn,vx,vy;
-if(kind==='fire'){sx=-16;sy=Math.random()<0.75?pys+(Math.random()-0.5)*44:20+Math.random()*(VH-90);sy=clamp(sy,14,VH-60);sp=115+k*85+Math.random()*35;r=4.5+Math.random()*2.5+k*1.5;vx=sp;vy=(Math.random()-0.5)*18;warn=0.75}
-else{const side=Math.floor(Math.random()*4);if(side===0){sx=-16;sy=Math.random()*VH}else if(side===1){sx=VW+16;sy=Math.random()*VH}else if(side===2){sx=Math.random()*VW;sy=-16}else{sx=Math.random()*VW;sy=VH+16}
-tx=(P.x-cam.x)+(kind==='ember'?(Math.random()-0.5)*90:0);ty=pys+(kind==='ember'?(Math.random()-0.5)*90:0);
-if(kind==='ember'){sp=65+Math.random()*40;r=2.6;warn=0.5}else{const big=Math.random()<0.55;sp=big?72+Math.random()*14:135+Math.random()*20;r=big?17+Math.random()*7:7+Math.random()*2;warn=1.6}
+{const side=Math.floor(Math.random()*4);if(side===0){sx=-16;sy=Math.random()*VH}else if(side===1){sx=VW+16;sy=Math.random()*VH}else if(side===2){sx=Math.random()*VW;sy=-16}else{sx=Math.random()*VW;sy=VH+16}
+tx=(P.x-cam.x)+(kind==='ember'?(Math.random()-0.5)*90:kind==='fire'?(Math.random()-0.5)*26:0);ty=pys+(kind==='ember'?(Math.random()-0.5)*90:kind==='fire'?(Math.random()-0.5)*26:0);
+if(kind==='fire'){sp=175+k*105+Math.random()*40;r=4.5+Math.random()*2.5+k*1.5;warn=0.7}else if(kind==='ember'){sp=65+Math.random()*40;r=2.6;warn=0.5}else{const big=Math.random()<0.55;sp=big?72+Math.random()*14:135+Math.random()*20;r=big?17+Math.random()*7:7+Math.random()*2;warn=1.6}
 const dx=tx-sx,dy=ty-sy,L=Math.hypot(dx,dy)||1;vx=dx/L*sp;vy=dy/L*sp}
 rocks.push({ssx:sx,ssy:sy,x:0,y:0,vx,vy,r,kind,warn,age:0,v:0,big:kind==='star'&&r>12})}
 function bhHaz(dt,rf){const d=rf-ZS[9],k=clamp((d-60)/300,0,1);let nf=0;for(const q of rocks)if(q.kind==='fire')nf++;
-fireT-=dt;if(fireT<=0){if(d>=60&&nf<(k>0.5?4:3))spawnBH('fire',k);fireT=(3.6-2.5*k)*(0.75+Math.random()*0.5)}
+fireT-=dt;if(fireT<=0){if(d>=60&&nf<(k>0.5?3:2))spawnBH('fire',k);fireT=(3.6-2.5*k)*(0.75+Math.random()*0.5)}
 if(d>=360){emberT-=dt;if(emberT<=0){spawnBH('ember',1);emberT=2.4+Math.random()*3.2}starT-=dt;if(starT<=0){spawnBH('star',1);starT=9+Math.random()*7}}}
 function hazStep(dt,rf,zi){if(zi===9)bhHaz(dt,rf);if(zi>=2&&zi!==9){astT-=dt;if(astT<=0&&rocks.length<3){spawnAst(zi);astT=([0,0,11,9,7.5,6.5,5.5,5,4.5,4][Math.min(zi,9)]||4)*(0.7+Math.random()*0.8)}}
 const cy=P.y-PH2/2;const sh=P.shOn&&(P.shK||0)>=0.34;
@@ -982,7 +981,13 @@ plBudget=1;for(const p of PL){const dr=p.row-rf,ad=Math.abs(dr);if(ad>90)continu
 if(p.k==='sun'){const gl=cx.createRadialGradient&&cx.createRadialGradient(cxp,cy,d*0.45,cxp,cy,d*0.75);if(gl&&gl.addColorStop){gl.addColorStop(0,'rgba(255,170,60,0.55)');gl.addColorStop(1,'rgba(255,120,30,0)');cx.fillStyle=gl;cx.fillRect(0,0,VW,VH)}}
 const b=getBody(p.k,d>=40?192:d);if(!b)continue;const f=d/b[1],w=Math.round(b[0].width*f),hh=Math.round(b[0].height*f);cx.imageSmoothingEnabled=true;cx.drawImage(b[0],Math.round(cxp-w/2),Math.round(cy-hh/2),w,hh);cx.imageSmoothingEnabled=false}
 drawSky(h,rf);drawDecor(h);
-{const hA=(ZS[9]+30)*ROW_H,a=clamp((rf-(ZS[9]-60))/60,0,1);if(a>0){const uu=clamp((rf-ZS[9])/520,0,1);dI(BODY.bh,VW*0.5,VH*0.28+(h-hA)*0.05-uu*20,clamp(2+uu*7.5,2,9.5),a)}}
+{const hA=(ZS[9]+30)*ROW_H,a=clamp((rf-(ZS[9]-60))/60,0,1);if(a>0){const uu=clamp((rf-ZS[9])/520,0,1),hx=clamp(WW*0.8-cam.x,VW*0.5,VW*0.92),hy=VH*(0.34-0.06*uu)+clamp((hA-h)*0.05,0,VH);
+cx.imageSmoothingEnabled=true;dI(BODY.bh,hx,hy,clamp(2+uu*5,2,6),a*(0.9-0.45*uu));cx.imageSmoothingEnabled=false;
+if(cx.createRadialGradient){const R=70+uu*150,g=cx.createRadialGradient(hx,hy,0,hx,hy,R);g.addColorStop(0,'rgba(0,0,0,'+(0.95*a)+')');g.addColorStop(0.55,'rgba(0,0,0,'+(0.55*a)+')');g.addColorStop(1,'rgba(0,0,0,0)');cx.fillStyle=g;cx.fillRect(0,0,VW,VH)}
+cx.save();cx.globalCompositeOperation='lighter';const iv=Math.min(1,0.3+uu*1.1);
+for(let i=0;i<90;i++){const ph=(i*0.61803)%1,sp=0.16+0.1*((i*7)%5)/5,f=(ph+T*sp)%1,ang0=i*2.399,rr0=VW*0.85;
+for(let t=0;t<3;t++){const ff=f-t*0.012;if(ff<0)continue;const rr=(1-ff)*rr0+4,ang=ang0+(1-ff)*(2.4+uu*2.2);const px=hx+Math.cos(ang)*rr,py=hy+Math.sin(ang)*rr*0.5;if(px<-4||px>VW+4||py<-4||py>VH+4)continue;cx.globalAlpha=Math.min(1,ff*3)*Math.min(1,(1-ff)*5)*(0.85-t*0.25)*a*iv;cx.fillStyle=i%3?'#ffb347':'#fff1d0';cx.fillRect(Math.round(px),Math.round(py),ff>0.85?2:1,ff>0.85?2:1)}}
+cx.restore();cx.globalAlpha=1}}
 }
 function render(){
 cx.setTransform(RS,0,0,RS,0,0);cx.imageSmoothingEnabled=false;

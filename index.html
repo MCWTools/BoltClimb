@@ -423,6 +423,7 @@ if(stage==2){if(Math.floor(t/300)%2==0){const c=Math.floor(w/2);[1,3,5,5,7,7].fo
 for(let i=0;i<3;i++){const y=7-((t/90+i*5)%8);p.d(6+i*10,y,'#c9ced8')}}
 })}
 function ladderSpr(h){return S('lad'+h,12,h,p=>{p.r(1,0,2,h,'#c58a4a');p.r(9,0,2,h,'#c58a4a');p.r(1,0,1,h,'#e2ad6b');p.r(9,0,1,h,'#e2ad6b');p.r(2,0,1,h,'#a86f38');p.r(10,0,1,h,'#a86f38');for(let y=2;y<h;y+=5){p.r(3,y,6,2,'#e2ad6b');p.r(3,y+2,6,1,'#8a5a2a')}})}
+function ladTop(o,q){const tx=o.x0+o.lean*o.dxL;return tx>=q.x-4&&tx<=q.x+q.w+4&&Math.abs(topAt(q,clamp(tx,q.x,q.x+q.w))-(o.y0-o.h))<20}
 function ladSpr(o){const bx=o.lean>0?8:8+o.dxL;return S('ladd'+o.lean+'|'+o.dxL+'|'+o.h,o.dxL+16,o.h+2,p=>{for(let s=0;s<=o.h;s++){const lx=bx+o.lean*o.dxL*(s/o.h),y=o.h-s;p.r(lx-5,y,2,1,'#c58a4a');p.r(lx+3,y,2,1,'#c58a4a');p.d(lx-5,y,'#e2ad6b');p.d(lx+3,y,'#e2ad6b');if(s%7==3){p.r(lx-3,y,7,2,'#e2ad6b');p.r(lx-3,y+2,7,1,'#8a5a2a')}}})}
 function wind(rf){const f=clamp((rf-100)/30,0,1)*clamp((290-rf)/40,0,1);return f*(Math.sin(T*0.4)*70+Math.sin(T*1.3)*35)}
 function tilt(R){const q=R(),m=q<0.6?0.02+R()*0.05:q<0.88?0.1+R()*0.1:0.28+R()*0.12;return(R()<0.5?-1:1)*m}
@@ -532,7 +533,7 @@ if(ly<1e3)return N(ly)+' ly';if(ly<1e6)return N(ly/1e3)+' nghìn ly';if(ly<1e9)r
 const W={rows:new Map(),mainX:[WW/2],pending:new Map(),col:new Set(),seedI:0,genMax:-1};
 let SEED='';
 function rowRng(r,salt){return mulberry((W.seedI^Math.imul(r+1,0x9E3779B1)^Math.imul(salt+7,0x85EBCA6B))>>>0)}
-function resetWorld(seed){W.pipC=null;SEED=seed;W.rows=new Map();W.mainX=[WW/2];W.pending=new Map();W.col=new Set();W.seedI=hashStr(seed);W.genMax=-1}
+function resetWorld(seed){W.pipC=null;W.stab=new Set();SEED=seed;W.rows=new Map();W.mainX=[WW/2];W.pending=new Map();W.col=new Set();W.seedI=hashStr(seed);W.genMax=-1}
 function rowKW(r){const z=zoneOfRow(r),R=rowRng(r,3);let kind=z.kinds[Math.floor(R()*z.kinds.length)];let w=RW[kind]||[24,32,32,40][Math.floor(R()*4)];if(kind==='cloud')w=[28,40,52,64][Math.floor(R()*4)];const stn=COOLROWS.has(r)||isRepRow(r)||isPortRow(r);if(stn){kind='metal';w=48}else{const zi2=zoneIdx(r);if([0,2,3,5].includes(zi2)&&r%7!==3&&kind!=='cloud'){const q=R();if(q<0.2){kind='ramp';w=[40,48,64][Math.floor(R()*3)]}}}return{kind,w}}
 function ensureMain(n){while(W.mainX.length<=n){const i=W.mainX.length,z=zoneOfRow(i),R=rowRng(i,1);const kw=rowKW(i);let minD=14;if(THICK.has(kw.kind))minD=Math.max(14,(kw.w+(i>1?rowKW(i-1).w:40))/2+10);const mag=minD+R()*Math.max(0,z.dx-minD),sg=R()<0.5?-1:1;let x=W.mainX[i-1]+sg*mag;if(x<50||x>WW-50)x=W.mainX[i-1]-sg*mag;W.mainX.push(clamp(x,50,WW-50))}}
 function newPlat(t,x,y,w,main){return{k:'plat',t,x,y,w,h:PH[t]||8,top:y+(PTOP[t]||0),main:!!main,thick:THICK.has(t),solidNow:true,a:1,vis:1,stand:0,off:0,hot:0,stage:0,dx:0,dy:0}}
@@ -546,8 +547,8 @@ const cool=COOLROWS.has(r),rep=isRepRow(r)&&!cool,pr=isPortRow(r),station=cool||
 const kw=rowKW(r);let kind=kw.kind,w=kw.w;let exX=-999;
 const m=newPlat(kind,mx-w/2,y,w,true);
 if(kind==='ramp'){const q4=rowRng(r,4);m.sl=(q4()<0.5?-1:1)*[0.18,0.28,0.38][Math.floor(q4()*3)];m.zs=zi>=2?1:0;m.y=y-m.sl*w/2;m.top=m.y}else if(kind==='stairs'){const q4=rowRng(r,4);m.sdir=q4()<0.5?-1:1;m.ns=w/12;m.sh=5+Math.floor(q4()*3);m.y=y+Math.round((m.ns-1)*m.sh/2);m.top=m.y}else{const q4=rowRng(r,4);m.sl=pr?0:station?(q4()<0.5?-0.07:0.07):tilt(q4);m.y=y-m.sl*w/2;m.top=m.y}
-if(!station&&r%7!==3&&(kind==='plank'||kind==='pipe'||kind==='scaffold')){const Rq=rowRng(r,7);const qq=Rq();if(r>=45&&r<=260&&qq<0.14){m.crum=1;m.cs=0;m.cst=0;m.ct=0}else if(zi<=1&&qq<0.4&&kind!=='scaffold'){m.sag=5;m.sgc=0}}
-if(!station&&!THICK.has(kind)&&kind!=='ramp'&&kind!=='stairs'&&(zi<=3||zi===5)&&r%7!==3){const Rm=rowRng(r,5);if(Rm()<(zi===1?0.4:0.14))m.drift={cx:mx,amp:zi===1?26:18,sp:0.6+Rm()*0.4,ph:Rm()*6.28}}
+if(!station&&r%7!==3&&!(W.stab&&W.stab.has(r))&&(kind==='plank'||kind==='pipe'||kind==='scaffold')){const Rq=rowRng(r,7);const qq=Rq();if(r>=45&&r<=260&&qq<0.14){m.crum=1;m.cs=0;m.cst=0;m.ct=0}else if(zi<=1&&qq<0.4&&kind!=='scaffold'){m.sag=5;m.sgc=0}}
+if(!station&&!THICK.has(kind)&&kind!=='ramp'&&kind!=='stairs'&&(zi<=3||zi===5)&&r%7!==3&&!(W.stab&&W.stab.has(r))){const Rm=rowRng(r,5);if(Rm()<(zi===1?0.4:0.14))m.drift={cx:mx,amp:zi===1?26:18,sp:0.6+Rm()*0.4,ph:Rm()*6.28}}
 if(kind==='cloud'){m.fade=R()<0.7;m.cv=Math.floor(rowRng(r,6)()*4)}
 if(zi===6&&!station){m.orbit={cx:mx,cy:m.y,r:14,sp:0.7+R()*0.5,ph:R()*6.28}}
 if(zi===7&&!station){m.drift={cx:mx,amp:24,sp:0.5+R()*0.4,ph:R()*6.28}}
@@ -575,7 +576,8 @@ if(R()<z.hz*0.9){const sd=R()<0.5?-1:1;for(const s2 of [sd,-sd]){const sx=clamp(
 if(zi<=3&&R()<0.18){const side=R()<0.5?-1:1,wx=clamp(mx+side*(84+R()*30),20,WW-34);let ok=true;for(let q=r-1;q<=r+1;q++){if(q>=0&&Math.abs(W.mainX[q]-(wx+7))<58)ok=false}
 if(ok){const pk=newPlat('plank',wx-10,y-36,34,false),sl=tilt(R);if(zi===0){const dl=Math.ceil(Math.abs(sl)*7)+3;objs.push({k:'wall',x:wx,y:y-36+dl,w:14,h:36-dl,solid:true,climb:true});pk.sl=sl;pk.y=y-36-sl*17;pk.top=pk.y;objs.push(pk)}}}
 if(zi===0&&r%7===3&&R()<0.55){let done=false;for(let t=0;t<6&&!done;t++){const nr=1+Math.floor(R()*3),hL=nr*ROW_H,ln=R()<0.5?-1:1,dxL=[0,16,28,40,54][Math.floor(R()*5)],xt=mx+ln*dxL;if(xt<24||xt>WW-24)continue;let ok=true;for(let j=1;j<nr;j++){const xj=mx+ln*dxL*j/nr;if(Math.abs(xj-W.mainX[r+j])<rowKW(r+j).w/2+22)ok=false}
-if(!ok)continue;done=true;objs.push({k:'ladder',x0:mx,y0:y,h:hL,lean:ln,dxL,x:Math.min(mx,xt)-8,y:y-hL,w:dxL+16});if(Math.abs(xt-W.mainX[r+nr])>=rowKW(r+nr).w/2+14){const pk=newPlat('plank',xt-14,y-hL,28,false),sl=tilt(R);pk.sl=sl;pk.y=y-hL-sl*14;pk.top=pk.y;objs.push(pk)}}}
+if(r+nr>=120)ok=false;{const wt=rowKW(r+nr).w,dd=Math.abs(xt-W.mainX[r+nr]);if(!(dd<=wt/2-8||dd>=wt/2+22))ok=false}
+if(!ok)continue;done=true;(W.stab||(W.stab=new Set())).add(r+nr);objs.push({k:'ladder',x0:mx,y0:y,h:hL,lean:ln,dxL,x:Math.min(mx,xt)-8,y:y-hL,w:dxL+16});if(Math.abs(xt-W.mainX[r+nr])>rowKW(r+nr).w/2-8){const pk=newPlat('plank',xt-14,y-hL,28,false),sl=tilt(R)*0;pk.sl=sl;pk.y=y-hL-sl*14;pk.top=pk.y;objs.push(pk)}}}
 }
 if(!station&&zi<=8&&r>=3){const Rf=rowRng(r,14),nF=zi<=1?1:2;for(let fi=0;fi<nF;fi++){if(Rf()>=(zi===0?0.5:0.55))continue;const ks=z.kinds.filter(k=>k!=='brick'&&k!=='hot'&&k!=='scaffold'&&k!=='ramp'&&k!=='stairs'),k3=ks[Math.floor(Rf()*ks.length)],w3=RW[k3]||(k3==='cloud'?[28,40,52,64][Math.floor(Rf()*4)]:[24,32,40][Math.floor(Rf()*3)]),x3c=30+Rf()*(WW-60),y3=y+Math.round((Rf()-0.5)*26);
 if(Math.abs(x3c-mx)<m.w/2+w3/2+18)continue;let bad=false;for(const q of objs){if(q.k==='coin'||q.k==='ground')continue;const qw=q.w||0,qy0=(q.y||0)-Math.abs((q.sl||0)*qw)-3,qy1=(q.y||0)+(q.h||10)+Math.abs((q.sl||0)*qw)+3;if(x3c-w3/2-6<q.x+qw&&x3c+w3/2+6>q.x&&y3-12<qy1&&y3+20>qy0)bad=true}
@@ -948,8 +950,8 @@ if(zi===9){const pull=25+Math.min(70,(rf-ZS[9])*0.8);P.vx+=Math.sign(WW*0.8-P.x)
 if(shielding){P.vx=0;P.vy=0}
 else if(P.rocketOn){P.peakY=P.y;P.vy=Math.max(P.vy-5000*dt,-290);P.vx=clamp(P.vx+ax*700*dt,-110,110);
 emit(2,P.x-P.face*5,P.y-5,60,Math.random()<0.5?'#ffe066':'#ff9a3c',0.3,0,1.57+(Math.random()-0.5)*0.6)}
-else if(P.onLadder){const o=P.onLadder;const dir=clamp(ax*o.lean-ay,-1,1);P.ladMove=dir!==0;let cs=P.ladS+dir*60*dt;if(dir!==0&&cs>0&&cs<o.h){const sx=P.x,sy=P.y,px=o.x0+o.lean*o.dxL*(cs/o.h),py=o.y0-cs;P.x=px;P.y=py;const bb={x:px-PW/2,y:py-PH2,w:PW,h:PH2};let blk=false;for(const q of near){if(q.k==='plat'&&(q.thick||q.sdir)&&q.solidNow&&sideBlock(q,bb)){blk=true;break}}P.x=sx;P.y=sy;if(blk)cs=P.ladS}P.ladS=cs;P.vx=0;P.vy=0;
-if(P.ladS>=o.h){P.onLadder=null;P.ladCd=0.35;P.x=o.x0+o.lean*o.dxL;P.y=o.y0-o.h;{let bt=null;for(const q of near){let tp;if(q.k==='plat'&&q.solidNow&&P.x>=q.x&&P.x<=q.x+q.w)tp=topAt(q,P.x);else if(q.solid&&q.k!=='ladder'&&P.x>=q.x&&P.x<=q.x+q.w)tp=q.y;else continue;if(tp>=P.y-14&&tp<=P.y+16&&(!bt||tp<bt.t))bt={o:q,t:tp}}if(bt){P.y=bt.t;P.vy=0;P.onGround=true;P.ground=bt.o;P.peakY=P.y}}}
+else if(P.onLadder){const o=P.onLadder;const dir=clamp(ax*o.lean-ay,-1,1);P.ladMove=dir!==0;let cs=P.ladS+dir*60*dt;if(dir!==0&&cs>0&&cs<o.h){const sx=P.x,sy=P.y,px=o.x0+o.lean*o.dxL*(cs/o.h),py=o.y0-cs;P.x=px;P.y=py;const bb={x:px-PW/2,y:py-PH2,w:PW,h:PH2};let blk=false;for(const q of near){if(q.k==='plat'&&(q.thick||q.sdir)&&q.solidNow&&!ladTop(o,q)&&sideBlock(q,bb)){blk=true;break}}P.x=sx;P.y=sy;if(blk)cs=P.ladS}P.ladS=cs;P.vx=0;P.vy=0;
+if(P.ladS>=o.h){P.onLadder=null;P.ladCd=0.35;P.x=o.x0+o.lean*o.dxL;P.y=o.y0-o.h;{let bt=null;for(const q of near){let tp;if(q.k==='plat'&&q.solidNow&&P.x>=q.x-3&&P.x<=q.x+q.w+3)tp=topAt(q,P.x);else if(q.solid&&q.k!=='ladder'&&P.x>=q.x-3&&P.x<=q.x+q.w+3)tp=q.y;else continue;if(tp>=P.y-14&&tp<=P.y+16&&(!bt||tp<bt.t))bt={o:q,t:tp}}if(bt){P.y=bt.t;P.vy=0;P.onGround=true;P.ground=bt.o;P.peakY=P.y}}}
 else if(P.ladS<=0&&dir<0){P.onLadder=null;P.ladCd=0.8;P.x=o.x0-o.lean*10;P.y=o.y0}
 else{P.x=o.x0+o.lean*o.dxL*(P.ladS/o.h);P.y=o.y0-P.ladS}}
 else if(P.cling){P.vy=ay<-0.4?-45:ay>0.4?55:18}
@@ -957,7 +959,7 @@ else{P.vy=Math.min(560,P.vy+g0*dt)}
 // move X
 P.x=clamp(P.x+P.vx*dt,8,WW-8);
 const hb=()=>({x:P.x-PW/2,y:P.y-PH2,w:PW,h:PH2});
-for(const o of near){const th=o.k==='plat'&&(o.thick||o.sdir)&&o.solidNow;if(!o.solid&&!th)continue;const b=hb();if(th?sideBlock(o,b):(P.y>o.y+0.01&&P.y-PH2<o.y+o.h&&b.x<o.x+o.w&&b.x+b.w>o.x)){if(th&&!P.onGround&&!P.onLadder){const tp=topAt(o,clamp(P.x,o.x,o.x+o.w)),dp=P.y-tp;if(dp>-1&&dp<=8){P.y=tp-0.05;if(P.vy>0)P.vy=Math.min(P.vy,60);continue}const bt2=bodyBot(o,clamp(P.x,o.x,o.x+o.w));if(P.vy<=0&&P.y-PH2>bt2-7){P.y=bt2+PH2;P.vy=0;continue}}if(P.x<o.x+o.w/2)P.x=o.x-PW/2;else P.x=o.x+o.w+PW/2;P.vx=0}}
+for(const o of near){const th=o.k==='plat'&&(o.thick||o.sdir)&&o.solidNow&&!(P.onLadder&&ladTop(P.onLadder,o));if(!o.solid&&!th)continue;const b=hb();if(th?sideBlock(o,b):(P.y>o.y+0.01&&P.y-PH2<o.y+o.h&&b.x<o.x+o.w&&b.x+b.w>o.x)){if(th&&!P.onGround&&!P.onLadder){const tp=topAt(o,clamp(P.x,o.x,o.x+o.w)),dp=P.y-tp;if(dp>-1&&dp<=8){P.y=tp-0.05;if(P.vy>0)P.vy=Math.min(P.vy,60);continue}const bt2=bodyBot(o,clamp(P.x,o.x,o.x+o.w));if(P.vy<=0&&P.y-PH2>bt2-7){P.y=bt2+PH2;P.vy=0;continue}}if(P.x<o.x+o.w/2)P.x=o.x-PW/2;else P.x=o.x+o.w+PW/2;P.vx=0}}
 P.wall=0;
 for(const o of near){if(!(o.solid&&o.climb))continue;if(P.y>o.y+0.01&&P.y-PH2<o.y+o.h){if(Math.abs(P.x+PW/2-o.x)<1.4)P.wall=1;else if(Math.abs(P.x-PW/2-(o.x+o.w))<1.4)P.wall=-1}}
 // move Y

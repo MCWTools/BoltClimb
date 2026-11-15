@@ -1,16 +1,6 @@
 {
- "characters": [
-  {
-   "file": "nguoi-que.png",
-   "name": "nguoi-que"
-  }
- ],
- "shields": [
-  {
-   "file": "vang.png",
-   "name": "vang"
-  }
- ],
+ "characters": [],
+ "shields": [],
  "platforms": [
   {
    "key": "brick24",

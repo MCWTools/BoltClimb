@@ -1115,6 +1115,9 @@ async function dbLoad(k){if(idb){try{const v=await idbGet(k);if(v!==undefined)re
 function saveCustoms(){return dbSave('skins',SKINS.filter(k=>k.custom&&!k.folder).map(k=>({id:k.id,name:k.name,atlas:k.atlas})))}
 function saveShields(){return dbSave('shields',SHIELDS.filter(k=>k.data&&!k.folder).map(k=>({id:k.id,name:k.name,data:k.data})))}
 const SHIELDS=[{id:'blue',name:'Bolt',pink:0},{id:'pink',name:'Pip',pink:1},
+{id:'wood',name:'Wood',sty:'wood',price:800},
+{id:'sword',name:'Sword',sty:'sword',price:1500},
+{id:'axe',name:'Axe',sty:'axe',price:1500},
 {id:'ember',name:'Ember',pal:{c1:'rgba(255,140,40,',c2:'#ffb347',c3:'#fff1d0'},price:500},
 {id:'toxic',name:'Toxic',pal:{c1:'rgba(90,255,120,',c2:'#7dff9a',c3:'#eaffee'},price:500},
 {id:'void',name:'Void',pal:{c1:'rgba(160,90,255,',c2:'#b98cff',c3:'#f0e6ff'},price:1000},
@@ -1126,7 +1129,24 @@ let shieldId='blue';try{shieldId=localStorage.getItem('bcShield')||'blue'}catch(
 if(!owned(SHIELDS.find(k=>k.id===shieldId)||SHIELDS[0]))shieldId='blue';
 function curShield(){return SHIELDS.find(k=>k.id===shieldId)||SHIELDS[0]}
 function attachShield(sh){const im=new Image();im.onload=()=>{sh.im=im;try{renderShields()}catch(e){}};im.src=sh.data}
-function drawMyShield(x,y,a0,k,fl){const sh=curShield();if(sh.data){if(!sh.im||(k<=0&&!(fl>0)))return;const e=k*k*(3-2*k),sc=0.45+0.55*e;cx.save();cx.translate(x,y);cx.rotate(a0);cx.scale(sc,sc);cx.globalAlpha=Math.min(1,Math.max(e,0.25)*(k>=0.34?1:0.6)+(fl>0?0.25:0));cx.drawImage(sh.im,-18,-18,36,36);cx.restore()}else drawShield(x,y,a0,k,fl,sh.pal||!!sh.pink)}
+
+const STY={
+wood:{rad:0,pal:{B:'#8d919b',b:'#7a5528',c:'#a67a40',a:'#5e3f1c',s:'#c9ced8'},rows:(()=>{const r=['BBBBBBBBB'];const col='bcbabcb';for(let y=0;y<12;y++){let t='B';for(let x=0;x<7;x++){let ch=col[x];if((y===1||y===5||y===9)&&(x===0||x===6))ch='s';if(y%4===2&&x===3)ch='a';t+=ch}r.push(t+'B')}r.push('BBBBBBBBB');return r})()},
+sword:{rad:1,swing:1,pal:{L:'#f4f8ff',M:'#9fb4c8',G:'#ffd23f',H:'#7a4a22',P:'#ffb000'},rows:['...L...','..MLM..','..MLM..','..MLM..','..MLM..','..MLM..','..MLM..','..MLM..','..MLM..','..MLM..','..MLM..','GGGGGGG','..GHG..','...H...','...H...','..PPP..']},
+axe:{rad:1,swing:1,pal:{E:'#f4f8ff',X:'#9fb4c8',H:'#7a4a22',P:'#c9ced8'},rows:['.EXXH....','EXXXH....','EXXXH....','EXXXH....','EXXXH....','.EXXH....','..EXH....','....H....','....H....','....H....','....H....','....H....','....H....','...PHP...']}
+};
+const STYC=new Map();
+function styCanvas(id){let c=STYC.get(id);if(c)return c;const d=STY[id],S=4,w=d.rows[0].length,h=d.rows.length;c=document.createElement('canvas');c.width=w*S;c.height=h*S;const q=c.getContext('2d');for(let y=0;y<h;y++)for(let x=0;x<w;x++){const ch=d.rows[y][x];if(ch==='.')continue;q.fillStyle=d.pal[ch]||'#fff';q.fillRect(x*S,y*S,S,S)}c.lw=w;c.lh=h;STYC.set(id,c);return c}
+function drawStyShield(id,x,y,a0,k,fl){if(k<=0&&!(fl>0))return;const d=STY[id],c=styCanvas(id),e=k*k*(3-2*k),sc=0.45+0.55*e,act=k>=0.34;
+cx.save();cx.translate(x,y);let sw=0;if(d.swing&&act)sw=Math.sin(T*16)*0.85;
+if(d.swing&&act){cx.globalCompositeOperation='lighter';cx.strokeStyle='rgba(255,255,255,'+(0.18+(fl>0?0.35:0))+')';cx.lineWidth=2;cx.beginPath();cx.arc(0,0,15,a0+sw-0.9*Math.sign(Math.cos(T*16)||1),a0+sw,Math.cos(T*16)<0);cx.stroke();cx.globalCompositeOperation='source-over'}
+cx.rotate(a0+sw);cx.scale(sc,sc);cx.globalAlpha=Math.min(1,Math.max(e,0.25)*(act?1:0.6)+(fl>0?0.25:0));
+const oi=cx.imageSmoothingEnabled;cx.imageSmoothingEnabled=true;
+if(d.rad){cx.translate(c.lh/2+3,0);cx.rotate(Math.PI/2);cx.drawImage(c,-c.lw/2,-c.lh/2,c.lw,c.lh)}else{cx.translate(15,0);cx.drawImage(c,-c.lw/2,-c.lh/2,c.lw,c.lh)}
+cx.imageSmoothingEnabled=oi;
+if(fl>0){cx.globalCompositeOperation='lighter';cx.fillStyle='rgba(255,255,255,'+Math.min(0.6,fl*2)+')';cx.fillRect(d.rad?2:12,-6,4,12)}
+cx.restore()}
+function drawMyShield(x,y,a0,k,fl){const sh=curShield();if(sh.sty){drawStyShield(sh.sty,x,y,a0,k,fl);return}if(sh.data){if(!sh.im||(k<=0&&!(fl>0)))return;const e=k*k*(3-2*k),sc=0.45+0.55*e;cx.save();cx.translate(x,y);cx.rotate(a0);cx.scale(sc,sc);cx.globalAlpha=Math.min(1,Math.max(e,0.25)*(k>=0.34?1:0.6)+(fl>0?0.25:0));cx.drawImage(sh.im,-18,-18,36,36);cx.restore()}else drawShield(x,y,a0,k,fl,sh.pal||!!sh.pink)}
 function shieldCanvas(pink,S){const c=document.createElement('canvas');c.width=c.height=36*S;const x=c.getContext('2d');const pl=pink&&typeof pink==='object'?pink:null;const c1=pl?pl.c1:pink?'rgba(255,120,220,':'rgba(60,200,255,',c2=pl?pl.c2:pink?'#ff8ae0':'#5ef0ff',c3=pl?pl.c3:pink?'#fff0ff':'#e8ffff',R=17,sp=0.95,m=18;x.fillStyle=c1+'0.3)';x.beginPath();x.moveTo(m*S,m*S);x.arc(m*S,m*S,R*S,-sp,sp);x.closePath();x.fill();for(let i=-12;i<=12;i++){const a=i/12*sp;x.fillStyle=pl&&pl.rb?(pl.rb===1?'hsl('+((i+12)*15)%360+',100%,70%)':'hsl('+Math.round(190+Math.sin(i*0.7)*20)+',100%,82%)'):i%2?c3:c2;x.fillRect(Math.round((m+Math.cos(a)*R-1)*S),Math.round((m+Math.sin(a)*R-1)*S),2*S,2*S)}return c}
 function shMsg(t,err){const m=$('shmsg');m.textContent=t;m.style.color=err?'#ff8a8a':'#8ff0a0'}
 function lockBadge(b,k){b.classList.add('lock');const t=document.createElement('span');t.className='pr';t.textContent='🔒 '+k.price+' ◆';b.appendChild(t)}
@@ -1141,7 +1161,7 @@ const en=document.documentElement.lang==='en',mkb=(t,cls,fn)=>{const s=document.
 row.appendChild(mkb('✎','ren',()=>{const n=(window.prompt(en?'New name':'Đổi tên',k.name)||'').trim().slice(0,14);if(!n)return;k.name=n;if(kind==='skin'){saveCustoms();renderSkins();titleView('skin')}else{saveShields();renderShields()}}));
 row.appendChild(mkb('✕','del2',()=>{if(!window.confirm((en?'Delete "':'Xóa "')+k.name+'"?'))return;if(kind==='skin'){const i=SKINS.indexOf(k);if(i>0)SKINS.splice(i,1);if(skinId===k.id){skinId='bolt';try{localStorage.setItem('bcSkin','bolt')}catch(_){}}saveCustoms();renderSkins();titleView('skin')}else{const i=SHIELDS.indexOf(k);if(i>1)SHIELDS.splice(i,1);if(shieldId===k.id){shieldId='blue';try{localStorage.setItem('bcShield','blue')}catch(_){}}saveShields();renderShields()}}));
 w.appendChild(row);return w}
-function renderShields(){const r=$('shrow');if(!r)return;updRC();r.innerHTML='';for(const k of SHIELDS){const b=document.createElement('button');b.className='b sk'+(k.id===shieldId?' on':'');const c=document.createElement('canvas');c.width=c.height=72;const q=c.getContext('2d');q.imageSmoothingEnabled=false;if(k.data){if(k.im)q.drawImage(k.im,10,0,26,36,10,0,52,72)}else q.drawImage(shieldCanvas(k.pal||k.pink,2),20,0,52,72,10,0,52,72);b.appendChild(c);const t=document.createElement('span');t.textContent=k.name;b.appendChild(t);
+function renderShields(){const r=$('shrow');if(!r)return;updRC();r.innerHTML='';for(const k of SHIELDS){const b=document.createElement('button');b.className='b sk'+(k.id===shieldId?' on':'');const c=document.createElement('canvas');c.width=c.height=72;const q=c.getContext('2d');q.imageSmoothingEnabled=false;if(k.sty){const sc=styCanvas(k.sty),f=Math.min(60/sc.lw,60/sc.lh);const w=sc.lw*f,h=sc.lh*f;q.imageSmoothingEnabled=true;q.drawImage(sc,(72-w)/2,(72-h)/2,w,h)}else if(k.data){if(k.im)q.drawImage(k.im,10,0,26,36,10,0,52,72)}else q.drawImage(shieldCanvas(k.pal||k.pink,2),20,0,52,72,10,0,52,72);b.appendChild(c);const t=document.createElement('span');t.textContent=k.name;b.appendChild(t);
 if(k.data&&!k.folder)impBadge(b);
 if(!owned(k))lockBadge(b,k);
 b.onclick=()=>{if(!owned(k)){if(!buyItem(k,'shield'))return}shieldId=k.id;try{localStorage.setItem('bcShield',k.id)}catch(e){}renderShields()};r.appendChild(impWrap(b,k,'shield'))}}
@@ -1348,6 +1368,10 @@ addEventListener('blur',()=>{for(const k in keys)keys[k]=false;kupd();inp.jumpHe
 addEventListener('resize',resize);
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&mode==='play'){save();openMenu()}});
 addEventListener('contextmenu',e=>e.preventDefault());
+function mAim(e){const rc=cv.getBoundingClientRect(),sx=rc.left+(P.x-cam.x)*scl,sy=rc.top+(P.y-12-cam.y)*scl,dx=e.clientX-sx,dy=e.clientY-sy,L=Math.hypot(dx,dy);if(L>6){inp.shx=dx/L;inp.shy=dy/L}}
+addEventListener('mousedown',e=>{if(e.button===2&&mode==='play'){inp.shHeld=true;mAim(e);e.preventDefault()}});
+addEventListener('mouseup',e=>{if(e.button===2){inp.shHeld=false;inp.shx=0;inp.shy=0}});
+addEventListener('mousemove',e=>{if(inp.shHeld&&(e.buttons&2))mAim(e)});
 
 /* ---------- main loop ---------- */
 let last=0,acc=0;
@@ -1364,7 +1388,7 @@ requestAnimationFrame(frame);
 buildBodies();resize();
 newGame(randSeed(),null);
 toTitle();
-window.__bc={die,run:()=>run,calcReport,get RC(){return RC},PL,gravAt,copyState,topAt,BOT,botStep,botPlace,botPlan,botAct,botPrompt,ufoSpr,boltImg,A,ufo,ufoCall,startFly,sats,get rocks(){return rocks},spawnAst,useIce,cam,runCmd,step,render,newGame,P,W,inp,get mode(){return mode},set mode(v){mode=v},genUpTo,nearObjs,altOf,fmtAlt,ZONES,ZS,ROW_H,save,loadSave,startNew,get T(){return T},updateHUD,openStation,say};
+window.__bc={drawStyShield,styCanvas,curShield,die,run:()=>run,calcReport,get RC(){return RC},PL,gravAt,copyState,topAt,BOT,botStep,botPlace,botPlan,botAct,botPrompt,ufoSpr,boltImg,A,ufo,ufoCall,startFly,sats,get rocks(){return rocks},spawnAst,useIce,cam,runCmd,step,render,newGame,P,W,inp,get mode(){return mode},set mode(v){mode=v},genUpTo,nearObjs,altOf,fmtAlt,ZONES,ZS,ROW_H,save,loadSave,startNew,get T(){return T},updateHUD,openStation,say};
 requestAnimationFrame(frame);
 })();
 for(const id of['blang','blang2']){const b=document.getElementById(id);if(b)b.onclick=()=>setLang(LANG==='en'?'vi':'en',1);}setLang(LANG);

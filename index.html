@@ -151,12 +151,88 @@ html,body{margin:0;height:100%;background:#05060f;overflow:hidden;touch-action:n
  <div class="row"><input id="seedin2" class="in" placeholder="Seed mới" maxlength="24"><button id="bseed" class="b" style="min-width:90px">Đổi</button></div>
  <p id="seederr" style="color:#ff6b6b"></p>
  <button id="bhit" class="b n">Hitbox: TẮT</button>
+ <button id="bmus" class="b n"></button>
+ <button id="bsfx" class="b n"></button>
  <button id="blang2" class="b n"></button>
  <button id="bexit" class="b n">Lưu và thoát</button>
 </div>
 <div id="modal" class="scr hide"></div>
 <div id="con" class="scr hide"><div class="row" style="width:100%;max-width:340px;justify-content:space-between"><h2>Console</h2><button id="cx" class="b r" style="min-width:44px;padding:6px 14px">X</button></div><p>height = 1000 · coin = 1000 · clock = 1 · ufo<br>fixheight (chuyển save cũ sang hệ độ cao mới) · cooling = 10 (số bình 10 giây) · gravity = 0.5 (so với Trái Đất)<br>jump = 3 (mét) · walkspeed = 4 (m/s) · gravity/jump/walkspeed = default<br>repair hand / spring / thruster / leg / all</p><input id="cin" class="in" style="width:300px" placeholder="lệnh..." autocomplete="off" autocapitalize="off"><button id="crun" class="b g">Chạy</button><p id="cout" style="min-height:2em"></p></div>
 
+<script>
+// ===== AUDIO: SFX + nhạc nền procedural (WebAudio, không cần file) =====
+const snd=(()=>{
+const LS='bcAudio',cfg={m:1,s:1};try{Object.assign(cfg,JSON.parse(localStorage.getItem(LS)||'{}'))}catch(e){}
+let ac=null,sfxBus,musBus,cheer,amb,ambIn,noiseB,rocketG,shieldG,drone1,drone2,zone=0,want='cheer',nextT=0,step=0,barCnt=0,trk=null,nextAmb=0,lastThr={},curDeep=-1;
+const R=Math.random,pick=a=>a[Math.floor(R()*a.length)],mtof=m=>440*Math.pow(2,(m-69)/12),cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+function save(){try{localStorage.setItem(LS,JSON.stringify(cfg))}catch(e){}}
+function impulse(sec,dec){const n=Math.floor(ac.sampleRate*sec),b=ac.createBuffer(2,n,ac.sampleRate);for(let c=0;c<2;c++){const d=b.getChannelData(c);for(let i=0;i<n;i++)d[i]=(R()*2-1)*Math.pow(1-i/n,dec)}return b}
+function osc(type,f0,f1,t,dur,vol,dest,a){a=a||0.005;const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.setValueAtTime(f0,t);if(f1&&f1!==f0)o.frequency.exponentialRampToValueAtTime(f1,t+dur);g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(vol,t+a);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);o.connect(g);g.connect(dest);o.start(t);o.stop(t+dur+0.05);return o}
+function nz(t,dur,vol,ft,f0,f1,dest){const s=ac.createBufferSource();s.buffer=noiseB;const f=ac.createBiquadFilter();f.type=ft;f.frequency.setValueAtTime(f0,t);if(f1)f.frequency.exponentialRampToValueAtTime(f1,t+dur);const g=ac.createGain();g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);s.connect(f);f.connect(g);g.connect(dest);s.start(t,R());s.stop(t+dur+0.05)}
+function init(){if(ac)return;try{ac=new(window.AudioContext||window.webkitAudioContext)()}catch(e){return}
+const comp=ac.createDynamicsCompressor();comp.connect(ac.destination);
+sfxBus=ac.createGain();sfxBus.gain.value=cfg.s?0.9:0;sfxBus.connect(comp);
+musBus=ac.createGain();musBus.gain.value=cfg.m?0.5:0;musBus.connect(comp);
+cheer=ac.createGain();cheer.connect(musBus);amb=ac.createGain();amb.gain.value=0;amb.connect(musBus);
+ambIn=ac.createGain();ambIn.connect(amb);const verb=ac.createConvolver();verb.buffer=impulse(3.2,2.2);const vg=ac.createGain();vg.gain.value=0.8;ambIn.connect(verb);verb.connect(vg);vg.connect(amb);
+noiseB=ac.createBuffer(1,ac.sampleRate*2,ac.sampleRate);{const d=noiseB.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=R()*2-1}
+// rocket + shield loops
+const rs=ac.createBufferSource();rs.buffer=noiseB;rs.loop=true;const rf=ac.createBiquadFilter();rf.type='bandpass';rf.frequency.value=650;rf.Q.value=0.6;rocketG=ac.createGain();rocketG.gain.value=0;rs.connect(rf);rf.connect(rocketG);rocketG.connect(sfxBus);rs.start();
+shieldG=ac.createGain();shieldG.gain.value=0;for(const f of[140,141.5,280]){const o=ac.createOscillator();o.type='sine';o.frequency.value=f;o.connect(shieldG);o.start()}shieldG.connect(sfxBus);
+// drone ambient (luôn chạy, chỉ nghe thấy khi amb mở)
+const df=ac.createBiquadFilter();df.type='lowpass';df.frequency.value=220;const dg=ac.createGain();dg.gain.value=0.22;df.connect(dg);dg.connect(ambIn);
+drone1=ac.createOscillator();drone1.type='sawtooth';drone1.frequency.value=mtof(33);drone2=ac.createOscillator();drone2.type='sawtooth';drone2.frequency.value=mtof(33)*1.004;drone1.connect(df);drone2.connect(df);drone1.start();drone2.start();
+const lfo=ac.createOscillator(),lg=ac.createGain();lfo.frequency.value=0.07;lg.gain.value=90;lfo.connect(lg);lg.connect(df.frequency);lfo.start();
+trk=newTrack();setInterval(tick,60);setZoneMix(true)}
+function unlock(){init();if(ac&&ac.state!=='running')ac.resume().catch(()=>{})}
+for(const e of['pointerdown','touchstart','keydown','click'])addEventListener(e,unlock,{passive:true});
+document.addEventListener('visibilitychange',()=>{if(!ac)return;if(document.hidden)ac.suspend().catch(()=>{});else ac.resume().catch(()=>{})});
+// ---- SFX ----
+function sfx(n,v){if(!ac||!cfg.s||ac.state!=='running')return;const t=ac.currentTime;if(lastThr[n]&&t-lastThr[n]<0.05)return;lastThr[n]=t;const d=sfxBus;
+switch(n){
+case'jump':osc('square',300,640,t,0.13,0.1,d);break;
+case'djump':osc('square',520,1050,t,0.15,0.1,d);osc('triangle',260,525,t,0.15,0.1,d);break;
+case'land':{const k=cl((v||200)/450,0.25,1);nz(t,0.1,0.18*k,'lowpass',1100,150,d);osc('sine',140,55,t,0.1,0.25*k,d)}break;
+case'coin':osc('square',988,988,t,0.07,0.08,d);osc('square',1319,1319,t+0.06,0.2,0.08,d);break;
+case'hurt':osc('sawtooth',380,70,t,0.35,0.16,d);nz(t,0.25,0.18,'bandpass',1800,300,d);break;
+case'break':nz(t,0.3,0.28,'bandpass',2400,300,d);osc('square',220,45,t,0.3,0.12,d);break;
+case'repair':[523,659,784,1047].forEach((f,i)=>osc('triangle',f,f,t+i*0.07,0.2,0.14,d));break;
+case'buy':osc('square',784,784,t,0.07,0.08,d);osc('square',1175,1175,t+0.07,0.07,0.08,d);osc('square',1568,1568,t+0.14,0.2,0.08,d);break;
+case'portal':osc('sine',180,1400,t,0.6,0.16,d,0.05);osc('triangle',270,2100,t,0.6,0.07,d,0.05);break;
+case'ladder':osc('square',720,720,t,0.05,0.06,d);break;
+case'shield':osc('sine',180,520,t,0.25,0.15,d,0.03);break;
+case'zone':osc('sine',784,784,t,1.4,0.1,d,0.02);osc('sine',784*2.76,784*2.76,t,0.6,0.025,d,0.02);osc('sine',1175,1175,t+0.18,1.6,0.1,d,0.02);break;
+case'click':osc('square',620,480,t,0.05,0.06,d);break;}}
+// ---- nhạc vui ----
+function newTrack(){const sc=pick([[0,2,4,5,7,9,11],[0,2,4,5,7,9,10],[0,2,4,6,7,9,11],[0,2,3,5,7,9,10]]);
+const rh=pick([[0,3,6,8,10,12],[0,2,4,6,8,12,14],[0,4,6,8,11,14],[0,3,4,7,8,12]]);let c=pick([0,2,4]);const cn=rh.map((_,i)=>{if(i)c=cl(c+pick([-2,-1,-1,1,1,2]),0,6);return c}),cn2=cn.slice();cn2[cn2.length-1]=pick([0,2,4]);cn2[cn2.length-2]=cl(cn2[cn2.length-2]+pick([-2,2]),0,6);
+return{bpm:108+Math.floor(R()*42),root:pick([55,57,58,60,62,64]),sc,prog:pick([[0,4,5,3],[0,5,3,4],[0,3,4,3],[5,3,0,4],[0,2,3,4],[0,4,3,4],[3,4,0,0]]),lead:pick(['square','triangle','sawtooth','square']),rh,cn,cn2,kick:pick([[0,4,8,12],[0,7,8,14],[0,3,8,10]]),snare:pick([[4,12],[8],[4,10,12]]),hat:pick([2,1,2]),bass:pick(['oct','pump','walk']),arp:R()<0.7,bars:16}}
+function drumK(t,d){osc('sine',150,45,t,0.14,0.35,d)}
+function drumS(t,d){nz(t,0.12,0.16,'bandpass',2200,1500,d);osc('triangle',220,140,t,0.08,0.1,d)}
+function drumH(t,d,v){nz(t,0.04,v,'highpass',7000,0,d)}
+function schedStep(t){const T=trk,sd=60/T.bpm/4,s=step%16,ch=T.prog[barCnt%4],N=x=>T.root+T.sc[((x%7)+7)%7]+12*Math.floor(x/7),d=cheer;
+if(T.kick.includes(s))drumK(t,d);if(T.snare.includes(s))drumS(t,d);if(s%T.hat===0)drumH(t,d,s%4===2?0.05:0.03);
+const bs=T.bass==='pump'?(s%2===0):T.bass==='oct'?[0,3,6,8,11,14].includes(s):[0,4,8,12].includes(s);
+if(bs){let bn=N(ch)-12;if(T.bass==='oct'&&(s===6||s===14))bn+=12;if(T.bass==='walk'&&s===4)bn=N(ch+4)-12;if(T.bass==='walk'&&s===12)bn=N(ch+2)-12;osc('triangle',mtof(bn),mtof(bn),t,sd*1.8,0.3,d);osc('square',mtof(bn),mtof(bn),t,sd*1.2,0.05,d)}
+if(T.arp&&s%2===1){const a=[0,2,4,2][(s>>1)%4];osc('triangle',mtof(N(ch+a)+12),mtof(N(ch+a)+12),t,sd*1.6,0.06,d)}
+const ix=T.rh.indexOf(s);if(ix>=0){const m=(barCnt%4===3?T.cn2:T.cn)[ix],f=mtof(N(ch+m+7));const o=osc(T.lead,f,f,t,sd*2.2,T.lead==='sawtooth'?0.045:0.08,d,0.01);if(T.lead!=='triangle')osc('triangle',f/2,f/2,t,sd*2,0.04,d)}
+step++;if(step%16===0){barCnt++;if(barCnt>=T.bars){trk=newTrack();step=0;barCnt=0}}}
+// ---- ambient không gian ----
+function ambTick(now){if(now<nextAmb)return;const deep=zone>=9?2:zone>=6?1:0;
+const root=pick(deep===2?[26,28,31]:deep===1?[31,33,36]:[33,36,38,40,43]),sc=deep===2?[0,1,5,7,8]:pick([[0,2,7,9,12],[0,3,7,10,14],[0,2,4,7,11],[0,5,7,10,12]]);
+const nn=3+Math.floor(R()*2);for(let i=0;i<nn;i++){const m=root+pick(sc)+12*pick([0,1,1,2]),f=mtof(m),fl=ac.createBiquadFilter();fl.type='lowpass';fl.frequency.value=deep===2?380:700;const g=ac.createGain();g.gain.setValueAtTime(0.0001,now);g.gain.linearRampToValueAtTime(0.06,now+3.5);g.gain.linearRampToValueAtTime(0.0001,now+11);fl.connect(g);g.connect(ambIn);
+for(const dt of[-4,4]){const o=ac.createOscillator();o.type=i%2?'triangle':'sawtooth';o.frequency.value=f;o.detune.value=dt;o.connect(fl);o.start(now);o.stop(now+11.2)}}
+if(R()<(deep===2?0.3:0.75)){const k=1+Math.floor(R()*3);for(let i=0;i<k;i++){const tt=now+1+R()*7,f=mtof(root+24+pick(sc));osc('sine',f,f,tt,6,0.05,ambIn,0.01);osc('sine',f*2.76,f*2.76,tt,2.5,0.012,ambIn,0.01)}}
+nextAmb=now+6+R()*5}
+function setZoneMix(first){if(!ac)return;const t=ac.currentTime,c=want==='cheer';cheer.gain.setTargetAtTime(c?1:0,t,first?0.01:1.3);amb.gain.setTargetAtTime(c?0:1,t,first?0.01:1.8);
+const deep=zone>=9?2:zone>=6?1:0;if(deep!==curDeep){curDeep=deep;const b=deep===2?mtof(26):deep===1?mtof(31):mtof(33);drone1.frequency.setTargetAtTime(b,t,3);drone2.frequency.setTargetAtTime(b*1.004,t,3)}}
+function tick(){if(!ac||ac.state!=='running')return;const now=ac.currentTime;
+if(cheer.gain.value>0.03||want==='cheer'){if(nextT<now-0.3)nextT=now+0.05;while(nextT<now+0.25){schedStep(nextT);nextT+=60/trk.bpm/4}}else nextT=0;
+if(want==='amb'||amb.gain.value>0.03)ambTick(now);else nextAmb=0}
+function upd(zi,rk,sh){if(!ac)return;const w=zi>=2?'amb':'cheer';if(w!==want||zi!==zone){want=w;zone=zi;setZoneMix(false)}const t=ac.currentTime;rocketG.gain.setTargetAtTime(rk&&cfg.s?0.2:0,t,0.05);shieldG.gain.setTargetAtTime(sh&&cfg.s?0.05:0,t,0.08)}
+function set(k,v){cfg[k]=v;save();if(!ac)return;if(k==='m')musBus.gain.setTargetAtTime(v?0.5:0,ac.currentTime,0.1);else{sfxBus.gain.setTargetAtTime(v?0.9:0,ac.currentTime,0.05)}}
+return{cfg,sfx,upd,set,unlock}})();
+</script>
 <script>
 const EN=[["Chọn nhân vật","Choose your character"],["Tên skin (khi import)","Skin name (on import)"],["Import skin (PNG)","Import skin (PNG)"],["Tải template sprite sheet","Download sprite sheet template"],["CHƠI","PLAY"],["Độ cao hiện tại","Current height"],["Kỷ lục","Best"],["Quay lại","Back"],["Cách chơi","How to play"],["Chưa có tiến trình","No progress yet"],["Sao Thiên Vương","Uranus"],["Sao Hải Vương","Neptune"],["Sao Thủy","Mercury"],["Sao Kim","Venus"],["Sao Hỏa","Mars"],["Sao Mộc","Jupiter"],["Sao Thổ","Saturn"],["Điện thoại: nút ◀ ▶ bên trái (vuốt qua lại không cần nhấc tay), NHẢY và ROCKET bên phải. Đứng ở chân hoặc đỉnh thang sẽ hiện nút Leo thang; khi leo, ◀ ▶ đổi thành ▲ ▼. Giữ ROCKET để phóng lên, thả ra là tắt.", "Phone: ◀ ▶ buttons on the left (slide between them without lifting), JUMP and ROCKET on the right. At the bottom or top of a ladder a Climb button appears; while climbing ◀ ▶ become ▲ ▼. Hold ROCKET to blast up, release to stop."], ["Giúp robot Bolt leo từ mặt đất lên tới hố đen. Không có checkpoint: té thì rơi xuống chỗ nào đứng chỗ đó. Té đau thì hỏng bộ phận, tìm trạm để sửa. Nhặt Repair Coin để trả phí.", "Help the robot Bolt climb from the ground all the way to a black hole. No checkpoints: if you fall you stay where you land. Hard falls break parts, so find a station to repair. Collect Repair Coins to pay."], ["fixheight (chuyển save cũ sang hệ độ cao mới) · cooling = 10 (số bình 10 giây) · gravity = 0.5 (so với Trái Đất)", "fixheight (convert old save to new height system) · cooling = 10 (10-second cans) · gravity = 0.5 (vs Earth)"], ["Máy tính: A/D đi, Space nhảy, giữ Shift để phóng rocket, E dùng trạm, Esc menu.", "Keyboard: A/D move, Space jump, hold Shift for rocket, E use station, Esc menu."], ["). Bấm nút băng ❄ để hạ nhiệt liền, miễn nhiễm 10 giây rồi nóng lại", "). Tap the ice ❄ button to cool down instantly, immune for 10 seconds then heats up again"], ["Nâng cấp: sửa hết + Thrust hồi 8s, nhảy cao hơn trong 90 giây", "Upgrade: repair all + thrust refills in 8s, jump higher for 90 seconds"], ["(làm mát vô hạn, thruster vô hạn, không hỏng, nhảy vô hạn)", "(infinite cooling, infinite thruster, no breakage, infinite jump)"], ["Giáp chịu nhiệt: miễn nhiễm sức nóng Mặt Trời vĩnh viễn", "Heat armor: permanent immunity to Sun heat"], ["Không thấy trạm sửa, mình thả bạn xuống nhé", "No repair station in sight, I'll put you down"], ["Sửa miễn phí 1 bộ phận (ở gần trạm 6 giây)", "Free repair of 1 part (stay near station 6 s)"], ["UFO đã xuất hiện, tiếp tục chơi để thấy", "UFO has appeared, keep playing to see it"], ["Vị trí không đổi, đã chuyển sang hệ mới", "Position unchanged, switched to new system"], ["Không cần sửa: đang dùng hệ độ cao mới", "No fix needed: already on the new height system"], ["Thang, giàn giáo, tường gạch: leo lên", "Ladders, scaffolds, brick walls: climb up"], ["Chào Bolt! Mình là Pip, đi leo thôi!", "Hi Bolt! I'm Pip, let's climb!"], ["Gió thổi ngang, mây tan khi đứng lâu", "Crosswinds, clouds fade if you stand too long"], ["Không copy được — chọn text dưới đây", "Couldn't copy — select the text below"], ["Bị hút ngang. Đi tiếp vào bóng tối", "Pulled sideways. Keep going into the dark"], ["Platform nóng! Xem thanh nhiệt độ", "Hot platforms! Watch the heat bar"], ["Trọng lực dao động. Bệ chập chờn", "Gravity fluctuates. Flickering pads"], ["Mình tới ngay, đợi mình leo lên!", "Coming! Wait for me to climb up!"], ["Không thấy trạm sửa, xin lỗi nhé", "No repair station found, sorry"], ["Đã copy! Dán vào chat cho mình.", "Copied! Paste it into the chat."], ["Trời tối dần. Vệ tinh bay ngang", "Getting dark. Satellites drift by"], ["Trọng lực thấp: nhảy bồng bềnh", "Low gravity: floaty jumps"], ["Leo lên lưng mình, đi sửa nè!", "Hop on my back, let's get repaired!"], ["Bình làm mát 10 giây (đang có", "10-second coolant can (you have"], ["Vá nhanh: sửa 1 bộ phận ngay", "Quick patch: repair 1 part now"], ["gravity mặc định (theo vùng)", "gravity default (by zone)"], ["Seed (để trống = ngẫu nhiên)", "Seed (blank = random)"], ["Đã cõng Pip — tìm trạm sửa!", "Carrying Pip — find a repair station!"], ["Sửa xong rồi! Cảm ơn Bolt!", "All fixed! Thanks Bolt!"], ["Portal dịch chuyển lên cao", "Portals teleport you up"], ["Pip đã tắt máy mãi mãi...", "Pip has shut down forever..."], ["Hẹn gặp lại trên đó nhé!", "See you up there!"], ["Tay hỏng, không leo được", "Arm broken, can't climb"], ["Ở gần trạm 6 giây để sửa", "Stay near the station for 6 s to repair"], ["<h2>Trạm sửa chữa</h2>", "<h2>Repair Station</h2>"], ["Đứng vững mới thả được", "Stand on solid ground to put down"], ["Mình mua băng làm mát!", "I'll buy some ice coolant!"], ["Đã mặc giáp chịu nhiệt", "Heat armor equipped"], ["Chơi lại (cùng seed)", "Restart (same seed)"], ["Mình... hỏng rồi...", "I'm... broken..."], ["bình (10 giây/bình)", "cans (10 s each)"], ["Thiên thạch trúng!", "Hit by an asteroid!"], ["UFO không đáp được", "UFO can't land"], ["walkspeed mặc định", "walkspeed default"], ["Dịch chuyển xuống", "Teleport down"], ["Lệnh không hợp lệ", "Invalid command"], ["Không tìm thấy bệ", "Platform not found"], ["Rời trạm, huỷ sửa", "Left station, repair cancelled"], ["Hạ nhiệt! 10 giây", "Cooled! 10 seconds"], ["Bệ xoay quanh sao", "Pads orbiting a star"], ["Đã sửa 1 bộ phận", "Repaired 1 part"], ["Nâng cấp 90 giây", "Upgraded for 90 s"], ["Hết bình làm mát", "Out of coolant cans"], ["Sửa toàn bộ ngay", "Repair everything now"], ["Bình thrust hỏng", "Thrust tank broken"], ["...hửm? Bolt hả?", "...huh? Bolt?"], ["· Bộ phận hỏng:", "· Broken parts:"], ["Dịch chuyển lên", "Teleport up"], ["Hết nhiên liệu", "Out of fuel"], ["Xong! Đỡ chưa?", "Done! Better?"], ["(Trái Đất = 1)", "(Earth = 1)"], ["Trạm sửa chữa", "Repair Station"], ["Bệ trôi ngang", "Drifting pads"], ["Vệ tinh hỏng!", "Satellite broken!"], ["Đánh thức Pip", "Wake Pip"], ["jump mặc định", "jump default"], ["Thả Pip xuống", "Put Pip down"], ["cho debug Pip", "for Pip debug"], ["Trạm làm mát", "Cooling Station"], ["bình làm mát", "coolant cans"], ["Lưu và thoát", "Save and quit"], ["[Giáp nhiệt]", "[Heat armor]"], ["Nhờ Pip cõng", "Ask Pip to carry"], ["Cụm thiên hà", "Galaxy Cluster"], ["UFO đang bận", "UFO is busy"], ["Đang làm mát", "Already cooling"], ["Bộ phận hỏng", "Broken parts"], ["Đã hạ cánh!", "Landed!"], ["bình thrust", "thrust tank"], ["Đã sửa xong", "Repair complete"], ["Xuống nhé!", "Going down!"], ["Lên vũ trụ", "To Space"], ["NHIÊN LIỆU", "FUEL"], ["[Đang sửa", "[Repairing"], ["Mặt Trăng", "The Moon"], ["Bay thôi!", "Let's fly!"], ["Gọi UFO!!", "UFO incoming!!"], ["Hành tinh", "Planets"], ["Thành phố", "City"], ["[Nâng cấp", "[Upgrade"], ["Cao nhất:", "Best:"], ["Leo xuống", "Climb down"], ["Leo thang", "Climb ladder"], ["KHIÊN ON", "SHIELD ON"], ["Tạm dừng", "Paused"], ["Tiếp tục", "Continue"], ["Tầng mây", "Clouds"], ["nghìn ly", "thousand ly"], ["triệu ly", "million ly"], ["Cõng Pip", "Carry Pip"], ["[Làm mát", "[Cooling"], ["Chơi mới", "New game"], ["Thiên hà", "Galaxy"], ["Mặt Trời", "The Sun"], ["· Nhiệt:", "· Heat:"], ["Sửa chữa", "Repair"], ["Seed mới", "New seed"], ["Miễn phí", "Free"], ["Thả Pip", "Put Pip down"], ["Làm mát", "Cooling"], ["Bụi đá!", "Rock dust!"], ["lệnh...", "command..."], ["Đã sửa", "Repaired"], ["Hố đen", "Black Hole"], ["Vũ trụ", "Universe"], ["TP tới", "Teleport to"], ["tỷ ly", "billion ly"], ["tỷ km", "billion km"], ["(hàng", "(row"], ["Hỏng:", "Broken:"], ["Lò xo", "Spring"], ["lò xo", "spring"], ["KHIÊN", "SHIELD"], ["Xuống", "Down"], ["Nhiệt", "Heat"], ["Pip: ", "Pip: "], ["HỎNG", "BROKEN"], ["NHẢY", "JUMP"], ["Đóng", "Close"], ["Chạy", "Run"], ["Chân", "Leg"], ["chân", "leg"], ["Bình", "Tank"], ["giây", "s"], ["Đổi", "Change"], ["gió", "wind"], ["Có ", "Have "], ["Tay", "Arm"], ["Á!", "Ouch!"]];
 let LANG='vi';try{LANG=localStorage.getItem('bcLang')==='en'?'en':'vi'}catch(e){}
@@ -534,11 +610,11 @@ const parts=[];
 function emit(n,x,y,sp,col,life,g,dir){for(let i=0;i<n;i++){const a=dir===undefined?Math.random()*6.28:dir+(Math.random()-0.5)*1.2;const s=sp*(0.4+Math.random()*0.6);parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:life*(0.6+Math.random()*0.4),l0:life,col,g:g||0})}}
 const nBroken=()=>P.parts.leg+P.parts.spring+P.parts.arm+P.parts.tank;
 let godMode=false,godAll=false;
-function breakPart(){if(godMode)return;const names=['leg','spring','arm','tank'].filter(k=>!P.parts[k]);if(!names.length)return;const k=names[Math.floor(Math.random()*names.length)];P.parts[k]=1;emit(14,P.x,P.y-10,90,'#ffe066',0.6,200);say('Hỏng: '+({leg:'chân',spring:'lò xo',arm:'tay',tank:'bình thrust'})[k])}
-function repairWorst(n){const order=['leg','spring','arm','tank'];let c=0;for(const k of order){if(P.parts[k]&&c<n){P.parts[k]=0;c++}}if(c){emit(16,P.x,P.y-10,80,'#5ef08a',0.7,-60);say(c>1?'Đã sửa xong':'Đã sửa 1 bộ phận')}}
+function breakPart(){if(godMode)return;const names=['leg','spring','arm','tank'].filter(k=>!P.parts[k]);if(!names.length)return;const k=names[Math.floor(Math.random()*names.length)];P.parts[k]=1;snd.sfx('break');emit(14,P.x,P.y-10,90,'#ffe066',0.6,200);say('Hỏng: '+({leg:'chân',spring:'lò xo',arm:'tay',tank:'bình thrust'})[k])}
+function repairWorst(n){const order=['leg','spring','arm','tank'];let c=0;for(const k of order){if(P.parts[k]&&c<n){P.parts[k]=0;c++}}if(c){snd.sfx('repair');emit(16,P.x,P.y-10,80,'#5ef08a',0.7,-60);say(c>1?'Đã sửa xong':'Đã sửa 1 bộ phận')}}
 let msgT=0;function nm(t){try{return t.replace(/Bolt|Pip/g,m=>m==='Bolt'?mySkin().name:buddySkin().name)}catch(e){return t}}
 function say(t){const m=$('msg');m.textContent=nm(tl(t));m.style.opacity=1;msgT=2.2}
-let banT=0;function banner(t,s){const b=$('banner');b.innerHTML=t+'<small>'+s+'</small>';b.style.opacity=1;banT=3}
+let banT=0;function banner(t,s){snd.sfx('zone');const b=$('banner');b.innerHTML=t+'<small>'+s+'</small>';b.style.opacity=1;banT=3}
 
 function newGame(seed,sv){
 resetWorld(seed);
@@ -817,7 +893,7 @@ const rf=-P.y/ROW_H,zi=zoneIdx(rf),z=ZONES[zi];
 P.hugT=Math.max(0,(P.hugT||0)-dt);const lock=P.cryT>0||P.angryT>0||P.shutT>0||P.hugT>0||P.carried;
 P.invT=Math.max(0,P.invT-dt);P.coolT=Math.max(0,P.coolT-dt);P.buffT=Math.max(0,P.buffT-dt);P.ladCd=Math.max(0,P.ladCd-dt);P.landT=Math.max(0,P.landT-dt);P.djT=Math.max(0,P.djT-dt);P.coyote-=dt;P.jumpBuf-=dt;P.pcd=Math.max(0,P.pcd-dt);
 const nb=nBroken();
-{const wantSh=inp.shHeld&&!lock&&!P.onLadder;if(wantSh&&!P.shOn)P.shA=P.face>0?0:Math.PI;P.shOn=wantSh;P.shK=clamp((P.shK||0)+(P.shOn?dt/0.16:-dt/0.12),0,1);P.shFl=Math.max(0,P.shFl-dt);
+{const wantSh=inp.shHeld&&!lock&&!P.onLadder;if(wantSh&&!P.shOn){P.shA=P.face>0?0:Math.PI;snd.sfx('shield')}P.shOn=wantSh;P.shK=clamp((P.shK||0)+(P.shOn?dt/0.16:-dt/0.12),0,1);P.shFl=Math.max(0,P.shFl-dt);
 if(P.shOn){const avx=inp.kx||inp.shx,avy=inp.kx||inp.ky?inp.ky:inp.shy;if(Math.hypot(avx,avy)>0.3)P.shA=Math.atan2(avy,avx)}}
 const shielding=false;
 let ax=lock?0:inp.ax(),ay=lock?0:inp.ay();
@@ -833,8 +909,8 @@ if(wasGround){P.coyote=0.1;P.jumpsLeft=1;P.peakY=P.y}
 P.onGround=false;
 // ladders
 if(P.onLadder&&(P.parts.arm||lock||P.rocketOn)){P.onLadder=null;P.ladCd=0.3}
-if(inp.actP&&nearPortal&&!P.onLadder&&!lock){const o=nearPortal;emit(14,P.x,P.y-8,80,'#c77dff',0.5,0);P.x=o.dest.x;P.y=o.dest.y;P.vx=0;P.vy=0;P.peakY=P.y;P.pcd=1.2;emit(14,P.x,P.y-8,80,'#5ef0ff',0.5,0);say('Portal!');nearPortal=null}
-if(inp.actP&&nearLadder&&!P.onLadder&&!lock&&!P.rocketOn&&wasGround){if(P.parts.arm)say('Tay hỏng, không leo được');else{const o=nearLadder.o;P.onLadder=o;P.ladS=nearLadder.s;P.vx=0;P.vy=0;P.face=o.lean}}
+if(inp.actP&&nearPortal&&!P.onLadder&&!lock){const o=nearPortal;emit(14,P.x,P.y-8,80,'#c77dff',0.5,0);P.x=o.dest.x;P.y=o.dest.y;P.vx=0;P.vy=0;P.peakY=P.y;P.pcd=1.2;snd.sfx('portal');emit(14,P.x,P.y-8,80,'#5ef0ff',0.5,0);say('Portal!');nearPortal=null}
+if(inp.actP&&nearLadder&&!P.onLadder&&!lock&&!P.rocketOn&&wasGround){if(P.parts.arm)say('Tay hỏng, không leo được');else{const o=nearLadder.o;P.onLadder=o;snd.sfx('ladder');P.ladS=nearLadder.s;P.vx=0;P.vy=0;P.face=o.lean}}
 // wall cling
 P.cling=false;
 if(!P.onLadder&&!wasGround&&P.wall&&!P.parts.arm&&!lock&&ax===P.wall)P.cling=true;
@@ -842,9 +918,9 @@ if(!P.onLadder&&!wasGround&&P.wall&&!P.parts.arm&&!lock&&ax===P.wall)P.cling=tru
 const jm=jmAt(rf)*(1-0.015*nb)*(P.buffT>0?1.08:1)*(BOT.carried?0.92:1);
 if(P.jumpBuf>0&&!lock&&!shielding){
 if(P.onLadder){P.onLadder=null;P.ladCd=1;P.vy=-190;let jvx=-P.face*55;{const dir=Math.sign(jvx);for(const q of near){if(q.k==='plat'&&(q.thick||q.sdir)&&q.solidNow){for(const off of [3,8,14]){const bb={x:P.x+dir*off-PW/2,y:P.y-PH2,w:PW,h:PH2};if(sideBlock(q,bb)){jvx=0;break}}if(jvx===0)break}}}P.vx=jvx;P.jumpBuf=0;P.jumpsLeft=1}
-else if(P.cling){P.vy=-JV*jm*0.95;P.vx=-P.wall*130;P.face=-P.wall;P.cling=false;P.jumpBuf=0;P.jumpsLeft=1;P.jumpCut=false;emit(6,P.x+P.wall*5,P.y-8,50,'#c9ced8',0.3,0)}
-else if(wasGround||P.coyote>0){P.vy=-JV*jm;P.jumpBuf=0;P.coyote=0;P.jumpCut=true;P.djT=0;emit(5,P.x,P.y,40,'#c9ced8',0.3,60,-1.57)}
-else if((!P.parts.spring||godAll)&&(P.jumpsLeft>0||godAll)){if(!godAll)P.jumpsLeft--;P.vy=-JV*0.9*jm;P.jumpBuf=0;P.djT=0.35;P.jumpCut=false;emit(10,P.x,P.y,70,'#ffe066',0.35,0,1.57)}
+else if(P.cling){P.vy=-JV*jm*0.95;P.vx=-P.wall*130;P.face=-P.wall;P.cling=false;P.jumpBuf=0;P.jumpsLeft=1;P.jumpCut=false;snd.sfx('jump');emit(6,P.x+P.wall*5,P.y-8,50,'#c9ced8',0.3,0)}
+else if(wasGround||P.coyote>0){P.vy=-JV*jm;P.jumpBuf=0;P.coyote=0;P.jumpCut=true;P.djT=0;snd.sfx('jump');emit(5,P.x,P.y,40,'#c9ced8',0.3,60,-1.57)}
+else if((!P.parts.spring||godAll)&&(P.jumpsLeft>0||godAll)){if(!godAll)P.jumpsLeft--;P.vy=-JV*0.9*jm;P.jumpBuf=0;P.djT=0.35;P.jumpCut=false;snd.sfx('djump');emit(10,P.x,P.y,70,'#ffe066',0.35,0,1.57)}
 }
 if(P.vy>=0)P.jumpCut=false;
 // thrust
@@ -904,7 +980,7 @@ const b=hb();
 nearStation=null;nearLadder=null;nearPortal=null;
 for(const o of near){
 if(o.k==='drone')o.x=o.cx+o.amp*Math.sin(T*o.sp+o.ph)-7;
-if(o.k==='coin'&&!W.col.has(o.id)){if(Math.abs(P.x-(o.x+5))<13&&Math.abs(P.y-8-(o.y+5))<15){W.col.add(o.id);P.coins++;emit(6,o.x+5,o.y+5,50,'#ffe066',0.35,0)}}
+if(o.k==='coin'&&!W.col.has(o.id)){if(Math.abs(P.x-(o.x+5))<13&&Math.abs(P.y-8-(o.y+5))<15){snd.sfx('coin');W.col.add(o.id);P.coins++;emit(6,o.x+5,o.y+5,50,'#ffe066',0.35,0)}}
 else if(o.k==='spikes'&&P.invT<=0&&overlap({x:b.x+1,y:b.y+2,w:b.w-2,h:b.h-2},o))hurt();
 else if(o.k==='laser'&&P.invT<=0&&((T+o.ph)%o.per)<o.on&&overlap({x:b.x+1,y:b.y+1,w:b.w-2,h:b.h-2},o))hurt();
 else if(o.k==='drone'&&P.invT<=0&&Math.hypot(o.x+7-P.x,o.y+5-(P.y-8))<10)hurt();
@@ -931,18 +1007,18 @@ if(P.carried&&BOT.st==='live'){P.x=BOT.x-BOT.face*2;P.y=BOT.y-10;P.vx=P.vy=0;P.o
 selectAnim(dt,ax,ay,wasGround);
 // particles
 for(let i=parts.length-1;i>=0;i--){const q=parts[i];q.life-=dt;if(q.life<=0){parts.splice(i,1);continue}q.vy+=q.g*dt;q.x+=q.vx*dt;q.y+=q.vy*dt}
-if(zi!==lastZone){lastZone=zi;if(started||zi>0)banner(z.n,z.hint)}
+snd.upd(zi,P.rocketOn,P.shOn);if(zi!==lastZone){lastZone=zi;if(started||zi>0)banner(z.n,z.hint)}
 inp.jumpP=false;inp.thrustP=false;inp.actP=false;
 }
 function onLand(fall){
-P.landT=0.24;emit(6,P.x,P.y,50,'#c9ced8',0.3,80,-1.57);
+P.landT=0.24;snd.sfx('land',fall);emit(6,P.x,P.y,50,'#c9ced8',0.3,80,-1.57);
 if(fall>330&&!godMode){
 if(fall<430){P.landT=0.4}
 else if(fall<520){P.cryT=1.4;breakPart();shake=0.25}
 else{P.cryT=2.4;breakPart();breakPart();shake=0.4}
 }
 }
-function hurt(){if(godMode)return;P.invT=3.4;P.vy=-170;P.vx=-P.face*80;P.cryT=1.0;P.onGround=false;P.ground=null;breakPart();emit(10,P.x,P.y-8,100,'#ff4d6d',0.4,100)}
+function hurt(){if(godMode)return;snd.sfx('hurt');P.invT=3.4;P.vy=-170;P.vx=-P.face*80;P.cryT=1.0;P.onGround=false;P.ground=null;breakPart();emit(10,P.x,P.y-8,100,'#ff4d6d',0.4,100)}
 function selectAnim(dt,ax,ay,wasGround){
 let ai=A.idle,fi=0;
 const nb=nBroken();
@@ -1320,14 +1396,17 @@ if(v==='play'){const sv=loadSave();let t='Chưa có tiến trình';if(sv&&typeof
 if(v==='skin'){renderSkins()}}
 let showHit=false;try{showHit=localStorage.getItem('bcHit')==='1'}catch(e){}
 function hitLbl(){try{$('bhit').textContent=(document.documentElement.lang==='en'?'Hitbox: ':'Hitbox: ')+(showHit?(document.documentElement.lang==='en'?'ON':'BẬT'):(document.documentElement.lang==='en'?'OFF':'TẮT'))}catch(e){}}
+function audLbl(){try{const en=document.documentElement.lang==='en',f=v=>v?(en?'ON':'BẬT'):(en?'OFF':'TẮT');$('bmus').textContent=(en?'Music: ':'Nhạc nền: ')+f(snd.cfg.m);$('bsfx').textContent=(en?'Sound FX: ':'Hiệu ứng: ')+f(snd.cfg.s)}catch(e){}}
+$('bmus').onclick=()=>{snd.set('m',snd.cfg.m?0:1);audLbl()};$('bsfx').onclick=()=>{snd.set('s',snd.cfg.s?0:1);audLbl()};audLbl();
+document.addEventListener('pointerdown',e=>{const t=e.target;if(t&&t.closest&&t.closest('.b,#bmenu'))snd.sfx('click')},true);
 $('bhit').onclick=()=>{showHit=!showHit;try{localStorage.setItem('bcHit',showHit?'1':'0')}catch(e){}hitLbl()};hitLbl();
 function refreshChars(){try{SC.clear();for(const [k,v] of OVR)SC.set(k,v);for(const k of SKINS)if(k.fr)k.fr.clear()}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshChars()});addEventListener('pageshow',refreshChars);addEventListener('focus',refreshChars);
 addEventListener('error',e=>{try{if(mode==='play')say('Lỗi: '+(e.message||'?'))}catch(_){}});
 initStore();
-function toTitle(){mode='title';show('title');titleView(false);$('bcont').style.display=loadSave()?'':'none'}
+function toTitle(){snd.upd(0,0,0);mode='title';show('title');titleView(false);$('bcont').style.display=loadSave()?'':'none'}
 function startNew(seed){clearSave();newGame(seed||randSeed(),null);mode='play';show(null);save()}
-function openMenu(){if(mode!=='play')return;mode='menu';$('menuinfo').textContent='Seed: '+SEED+'  ·  '+fmtAlt(altOf(-P.y))+'  ·  '+fmtT(timer);$('seedin2').value='';show('menu')}
+function openMenu(){if(mode!=='play')return;audLbl();mode='menu';$('menuinfo').textContent='Seed: '+SEED+'  ·  '+fmtAlt(altOf(-P.y))+'  ·  '+fmtT(timer);$('seedin2').value='';show('menu')}
 function closeMenu(){mode='play';show(null)}
 function openStation(st){
 mode='modal';const zi=zoneIdx(-P.y/ROW_H),m=1+Math.min(zi,9)*0.3,c=P.coins;
@@ -1350,7 +1429,7 @@ $('modal').innerHTML=h;show('modal');
 }
 $('modal').addEventListener('click',e=>{const a=e.target.getAttribute&&e.target.getAttribute('data-act');if(!a)return;
 const zi=zoneIdx(-P.y/ROW_H),m=1+Math.min(zi,9)*0.3;
-const pay=n=>{if(P.coins<n)return false;P.coins-=n;return true};
+const pay=n=>{if(P.coins<n)return false;P.coins-=n;snd.sfx('buy');return true};
 if(a=='free'){P.freeRep=6;P.frG=1.2;say('Ở gần trạm 6 giây để sửa')}
 else if(a=='q1'){if(pay(Math.round(12*m)))repairWorst(1)}
 else if(a=='full'){if(pay(Math.round(35*m)))repairWorst(4)}

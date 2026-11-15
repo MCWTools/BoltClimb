@@ -754,7 +754,7 @@ if(lock&&wasGround)P.vx*=0.85;
 // env
 const g0=GRAV*gravMul(rf);
 {const wn=wind(rf);windX+=wn*dt;if(!wasGround)P.vx+=wn*dt;else if(!ax)P.x=clamp(P.x+wn*0.1*dt,8,WW-8)}
-if(zi===9){const pull=18+Math.min(105,Math.max(0,rf-ZS[9])*0.32);P.vx+=Math.sign(WW*0.8-P.x)*pull*(wasGround?0.4:1)*dt}
+if(zi===9){const pull=18+Math.min(105,Math.max(0,rf-ZS[9])*0.32);P.vx+=Math.sign(WW*(0.8-0.3*clamp((rf-ZS[9])/360,0,1))-P.x)*pull*(wasGround?0.4:1)*dt}
 // vertical
 if(shielding){P.vx=0;P.vy=0}
 else if(P.rocketOn){P.peakY=P.y;P.vy=Math.max(P.vy-5000*dt,-290);P.vx=clamp(P.vx+ax*700*dt,-110,110);
@@ -981,10 +981,10 @@ plBudget=1;for(const p of PL){const dr=p.row-rf,ad=Math.abs(dr);if(ad>90)continu
 if(p.k==='sun'){const gl=cx.createRadialGradient&&cx.createRadialGradient(cxp,cy,d*0.45,cxp,cy,d*0.75);if(gl&&gl.addColorStop){gl.addColorStop(0,'rgba(255,170,60,0.55)');gl.addColorStop(1,'rgba(255,120,30,0)');cx.fillStyle=gl;cx.fillRect(0,0,VW,VH)}}
 const b=getBody(p.k,d>=40?192:d);if(!b)continue;const f=d/b[1],w=Math.round(b[0].width*f),hh=Math.round(b[0].height*f);cx.imageSmoothingEnabled=true;cx.drawImage(b[0],Math.round(cxp-w/2),Math.round(cy-hh/2),w,hh);cx.imageSmoothingEnabled=false}
 drawSky(h,rf);drawDecor(h);
-{const hA=(ZS[9]+30)*ROW_H,a=clamp((rf-(ZS[9]-60))/60,0,1);if(a>0){const uu=clamp((rf-ZS[9])/520,0,1),hx=clamp(WW*0.8-cam.x,VW*0.5,VW*0.92),hy=VH*(0.34-0.06*uu)+clamp((hA-h)*0.05,0,VH);
-if(cx.createRadialGradient){const gl=cx.createRadialGradient(hx,hy,10,hx,hy,260+uu*120);gl.addColorStop(0,'rgba(255,140,50,'+(0.42*a)+')');gl.addColorStop(0.5,'rgba(170,50,40,'+(0.2*a)+')');gl.addColorStop(1,'rgba(80,20,60,0)');cx.fillStyle=gl;cx.fillRect(0,0,VW,VH)}
-cx.imageSmoothingEnabled=true;dI(BODY.bh,hx,hy,clamp(2.4+uu*3.6,2.4,6),a*(1-0.5*uu));cx.imageSmoothingEnabled=false;
-if(cx.createRadialGradient){const R=34+uu*70,g=cx.createRadialGradient(hx,hy,0,hx,hy,R);g.addColorStop(0,'rgba(0,0,0,'+(0.95*a)+')');g.addColorStop(0.6,'rgba(0,0,0,'+(0.5*a)+')');g.addColorStop(1,'rgba(0,0,0,0)');cx.fillStyle=g;cx.fillRect(0,0,VW,VH)}
+{const hA=(ZS[9]+30)*ROW_H,a=clamp((rf-(ZS[9]-60))/60,0,1);if(a>0){const d9=Math.max(0,rf-ZS[9]),uu=clamp(d9/520,0,1),ce=clamp(d9/360,0,1),hx0=clamp(WW*0.8-cam.x,VW*0.5,VW*0.92),hx=hx0+(VW*0.5-hx0)*ce,hy=VH*(0.34+0.14*ce)+clamp((hA-h)*0.05,0,VH),hs=Math.min(80,2.4*Math.exp(d9/190));
+if(cx.createRadialGradient){const gl=cx.createRadialGradient(hx,hy,10,hx,hy,260+hs*14);gl.addColorStop(0,'rgba(255,140,50,'+(0.42*a)+')');gl.addColorStop(0.5,'rgba(170,50,40,'+(0.2*a)+')');gl.addColorStop(1,'rgba(80,20,60,0)');cx.fillStyle=gl;cx.fillRect(0,0,VW,VH)}
+cx.imageSmoothingEnabled=true;dI(BODY.bh,hx,hy,hs,a);cx.imageSmoothingEnabled=false;
+if(cx.createRadialGradient){const R=Math.max(34,hs*12),g=cx.createRadialGradient(hx,hy,0,hx,hy,R);g.addColorStop(0,'rgba(0,0,0,'+(0.95*a)+')');g.addColorStop(0.6,'rgba(0,0,0,'+(0.5*a)+')');g.addColorStop(1,'rgba(0,0,0,0)');cx.fillStyle=g;cx.fillRect(0,0,VW,VH)}
 cx.save();cx.globalCompositeOperation='lighter';const iv=Math.min(1,0.65+uu*0.8);
 for(let i=0;i<90;i++){const ph=(i*0.61803)%1,sp=0.16+0.1*((i*7)%5)/5,f=(ph+T*sp)%1,ang0=i*2.399,rr0=VW*0.85;
 for(let t=0;t<3;t++){const ff=f-t*0.012;if(ff<0)continue;const rr=(1-ff)*rr0+4,ang=ang0+(1-ff)*(2.4+uu*2.2);const px=hx+Math.cos(ang)*rr,py=hy+Math.sin(ang)*rr*0.5;if(px<-4||px>VW+4||py<-4||py>VH+4)continue;cx.globalAlpha=Math.min(1,ff*3)*Math.min(1,(1-ff)*5)*(0.85-t*0.25)*a*iv;cx.fillStyle=i%3?'#ffb347':'#fff1d0';cx.fillRect(Math.round(px),Math.round(py),ff>0.7?2:1,ff>0.7?2:1)}}

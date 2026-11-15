@@ -451,12 +451,12 @@ if(!ok){try{const ta=document.createElement('textarea');ta.value=txt;ta.style.po
 return {ok,txt}}
 function botPrompt(){const B=BOT;if(mode!=='play'||ufoBusy()||B.away)return null;if(P.carried)return{l:'Xuống'};if(!botNearP())return null;
 if(B.st==='sleep')return{l:'Đánh thức Pip'};if(B.st==='broken')return{l:B.carried?'Thả Pip':'Cõng Pip'};if(B.carried)return{l:'Thả Pip'};
-if(B.st==='live'&&(P.parts.leg||nBroken()>=3))return{l:'Nhờ Pip cõng'};return null}
+if(B.st==='live'&&(P.parts.leg||nBroken()>=3)&&!B.parts.leg)return{l:'Nhờ Pip cõng'};if(B.st==='live'&&B.hp<4&&!B.away)return{l:'Cõng Pip'};if(B.st==='live'&&(P.parts.leg||nBroken()>=3))return{l:'Nhờ Pip cõng'};return null}
 function dropPlayer(){const B=BOT;P.carried=false;B.mission='';B.plan=null;B.spdm=B.parts.leg?0.7:1;B.jmul=B.parts.spring?0.88:1;P.x=B.x+B.face*6;P.y=B.y;P.vx=P.vy=0;P.onGround=true;P.ground=B.ground;P.peakY=P.y}
 function botAct(){const B=BOT,pr=botPrompt();if(!pr)return false;
 if(P.carried){dropPlayer();pipSay('Xuống nhé!');return true}
 if(B.st==='sleep'){B.st='wake';B.wt=0;B.say1=B.say2=false;P.hugT=0;return true}
-if(B.st==='broken'||B.carried){if(B.carried){if(!P.onGround){say('Đứng vững mới thả được');return true}B.carried=false;B.x=P.x+P.face*8;B.y=P.y;B.vx=B.vy=0;B.ground=P.ground;B.onGround=true;say('Thả Pip xuống')}else{B.carried=true;P.face=P.face;say('Đã cõng Pip — tìm trạm sửa!')}return true}
+if(B.st==='broken'||B.carried||(B.st==='live'&&B.hp<4&&!(P.parts.leg||nBroken()>=3&&!B.parts.leg))){if(B.carried){if(!P.onGround){say('Đứng vững mới thả được');return true}B.carried=false;B.x=P.x+P.face*8;B.y=P.y;B.vx=B.vy=0;B.ground=P.ground;B.onGround=true;say('Thả Pip xuống')}else{B.carried=true;P.face=P.face;B.plan=null;B.mission='';say('Đã cõng Pip — tìm trạm sửa!')}return true}
 if(B.st==='live'){P.carried=true;B.mission='carry';B.plan=null;B.carryT=0;B.stn=null;B.stnT=0;B.spdm=0.8;B.jmul=0.88;pipSay('Leo lên lưng mình, đi sửa nè!');return true}
 return false}
 function botStation(br,range,kind){let best=null,bd=1e9;for(let r=Math.max(0,br-range);r<=br+range;r++){const ob=W.rows.get(r);if(!ob)continue;for(const o of ob){if(o.k==='station'&&(!kind||o.st===kind)){const d=Math.abs(r-br);if(d<bd){bd=d;best=o}}}}
@@ -490,7 +490,7 @@ if(Math.abs(topAt(cur,clamp(tx2,cur.x,cur.x+cur.w))-tt)<7&&tx2>=cur.x&&tx2<=cur.
 if(best===start)return null;const edges=[];for(let n=best;n!==start;n=nodes.get(n).p)edges.unshift(nodes.get(n).e);return{from:start,edges,goal}}
 function botFindGoal(){const B=BOT,br=Math.round(-B.y/ROW_H);
 if(B.mission==='carry'){if(!B.stn||B.stnT<=0){B.stn=botStation(br,40,'rep')||botStation(br,40);B.stnT=1.5}if(B.stn)return{plat:B.stn.plat,x:B.stn.x};return null}
-if(B.mission==='heal'){if(!B.stn||B.stnT<=0){B.stn=botStation(br,14,'rep');B.stnT=1.5}if(B.stn)return{plat:B.stn.plat,x:B.stn.x};B.mission=''}
+if(B.mission==='heal'){if(!B.stn||B.stnT<=0){B.stn=botStation(br,34,'rep');B.stnT=1.5}if(B.stn)return{plat:B.stn.plat,x:B.stn.x};B.mission=''}
 if(P.ground&&P.onGround&&P.ground.k==='plat'){B.pg=P.ground;B.pgx=P.x}
 if((B.pAir||0)>0.8&&!P.carried){const pr=Math.round(-P.y/ROW_H),tr=clamp(pr,br-8,br+8);let best=null,bd=1e9;for(let d=0;d<=5&&!best;d++)for(const r of(d?[tr-d,tr+d]:[tr])){const ob=W.rows.get(r);if(!ob)continue;for(const o of ob)if(o.k==='plat'&&o.main&&platOK(o,0)&&o.t!=='hot'){const dx=Math.abs(o.x+o.w/2-P.x)+Math.abs(r-tr)*12;if(dx<bd){bd=dx;best=o}}}if(best&&best!==B.ground)return{plat:best,x:clamp(P.x,best.x+4,best.x+best.w-4)}}
 if(!B.pg)return null;return{plat:B.pg,x:noSpk(B.pg,clamp(P.x-P.face*18,B.pg.x+4,B.pg.x+B.pg.w-4))}}
@@ -532,6 +532,7 @@ const near=nearObjs(rp-4,rp+5);if(Math.abs(rp-Math.round(-P.y/ROW_H))>8)for(cons
 if(B.st==='wake'){B.wt+=dt;if(B.wt>0.3&&!B.say1){B.say1=true;pipSay('...hửm? Bolt hả?')}
 if(B.wt>1.5&&!B.say2){B.say2=true;P.hugT=1.0;B.face=P.x>=B.x?1:-1;P.face=-B.face;emit(10,(B.x+P.x)/2,B.y-24,40,'#ff7ad0',0.9,-40,-1.57);pipSay('Chào Bolt! Mình là Pip, đi leo thôi!')}
 if(B.wt>2.7){B.st='live';B.plan=null}return}
+if(B.carried&&B.st==='live'){B.x=P.x-P.face*3;B.y=P.y-8;B.vx=B.vy=0;B.onGround=false;B.ground=null;B.plan=null;B.fly=false;B.rk=false;if(nearStation&&nearStation.st==='rep'&&P.onGround&&B.hp<4){B.healT+=dt;if(B.healT>1.2){B.healT=0;botRepair();emit(8,B.x,B.y-10,60,'#5ef08a',0.5,-50);if(B.hp>=4)pipSay('Sửa xong rồi! Cảm ơn Bolt!')}}else B.healT=0;return}
 if(B.st==='broken'){if(B.carried){B.x=P.x-P.face*3;B.y=P.y-8;B.vx=B.vy=0;B.onGround=false;B.ground=null;
 if(nearStation&&nearStation.st==='rep'&&P.onGround){B.healT+=dt;if(B.healT>2.5){B.healT=0;B.st='live';B.hp=3;B.carried=false;B.x=P.x+P.face*10;B.y=P.y;B.ground=P.ground;B.onGround=true;B.vx=0;B.plan=null;emit(16,B.x,B.y-10,80,'#5ef08a',0.7,-60);pipSay('Sửa xong rồi! Cảm ơn Bolt!')}}else B.healT=0}
 else{botMove(dt,near,0);B.dieT-=dt;if(B.dieT<=0){B.st='dead';emit(24,B.x,B.y-10,110,'#ff7ad0',1,60);say('Pip đã tắt máy mãi mãi...')}}
@@ -551,7 +552,7 @@ if(B.st!=='live')return;
 {const zi=zoneIdx(rp);if(zi===4){if(B.coolT>0)B.coolT-=dt;else{B.heat+=0.45*dt;if(B.heat>60&&B.cool>0){B.cool--;B.coolT=10;B.heat=0;emit(10,B.x,B.y-10,70,'#9fe8ff',0.5,0)}}if(B.heat>=100){botBreak();return}}else B.heat=Math.max(0,B.heat-6*dt);
 for(const o of near){if(o.k==='coin'&&!W.col.has(o.id)&&Math.abs(B.x-(o.x+5))<13&&Math.abs(B.y-8-(o.y+5))<16){W.col.add(o.id);P.coins++;emit(6,o.x+5,o.y+5,50,'#ffe066',0.35,0)}
 else if(o.k==='station'&&B.onGround&&Math.abs(B.x-(o.x+o.w/2))<14&&Math.abs(B.y-(o.y+o.h))<6){if(o.st==='rep'&&B.hp<4){B.healT+=dt;if(B.healT>1.2){B.healT=0;botRepair();emit(8,B.x,B.y-10,60,'#5ef08a',0.5,-50)}}else if(o.st==='cool'&&B.cool<1&&P.coins>=10){P.coins-=10;B.cool=1;emit(8,B.x,B.y-10,60,'#9fe8ff',0.5,-50);pipSay('Mình mua băng làm mát!')}}}
-if(B.mission==='heal'&&B.hp>=4)B.mission='';if(!B.mission&&B.hp<4&&!P.carried&&B.stnT<=0){B.stnT=2;if(botStation(rp,14,'rep'))B.mission='heal'}}
+if(B.mission==='heal'&&B.hp>=4)B.mission='';if(!B.mission&&B.hp<4&&!P.carried&&B.stnT<=0){B.stnT=2;if(botStation(rp,34,'rep'))B.mission='heal'}}
 // hug (before UFO)
 if(B.hugReq>0){B.hugReq-=dt;if(P.onGround&&Math.hypot(B.x-P.x,B.y-P.y)<130){B.hugReq=0;B.hug=1.6;P.hugT=1.6;P.vx=0}else if(B.hugReq<=0){B.hugReq=0;B.hugOk=true;ufoCall()}}
 if(B.hug>0){B.hug-=dt;B.face=P.x>=B.x?1:-1;botMove(dt,near,0);B.tgt=null;if(B.hug<=0){B.hugHeart=false;B.hugOk=true;pipSay('Hẹn gặp lại trên đó nhé!');ufoCall()}return}
@@ -704,7 +705,7 @@ if(inp.actP&&nearLadder&&!P.onLadder&&!lock&&!P.rocketOn&&wasGround){if(P.parts.
 P.cling=false;
 if(!P.onLadder&&!wasGround&&P.wall&&!P.parts.arm&&!lock&&ax===P.wall)P.cling=true;
 // jump
-const jm=jmAt(rf)*(1-0.015*nb)*(P.buffT>0?1.08:1)*(BOT.carried?0.92:1);
+const jm=jmAt(rf)*(1-0.015*nb)*(P.buffT>0?1.08:1)*(BOT.carried?0.84:1);
 if(P.jumpBuf>0&&!lock&&!shielding){
 if(P.onLadder){P.onLadder=null;P.ladCd=1;P.vy=-190;let jvx=-P.face*55;{const dir=Math.sign(jvx);for(const q of near){if(q.k==='plat'&&(q.thick||q.sdir)&&q.solidNow){for(const off of [3,8,14]){const bb={x:P.x+dir*off-PW/2,y:P.y-PH2,w:PW,h:PH2};if(sideBlock(q,bb)){jvx=0;break}}if(jvx===0)break}}}P.vx=jvx;P.jumpBuf=0;P.jumpsLeft=1}
 else if(P.cling){P.vy=-JV*jm*0.95;P.vx=-P.wall*130;P.face=-P.wall;P.cling=false;P.jumpBuf=0;P.jumpsLeft=1;P.jumpCut=false;snd.sfx('jump');emit(6,P.x+P.wall*5,P.y-8,50,'#c9ced8',0.3,0)}

@@ -25,7 +25,7 @@ const K='#141826';
 
 /* ---------- Bolt sprite ---------- */
 const BC={K:'#141826',W:'#eef2f8',G:'#9aa6bd',S:'#1e2a48',E:'#5ef0ff',R:'#ff4d6d',B:'#4d7cff',O:'#ff9a3c',Y:'#ffe066',J:'#5a6580',T:'#7fd4ff',M:'#c9ced8',Z:'#9fb4c8',Q:'#e6f1ff'};
-const SKPAL={elec:{B:'#ffc400'},
+const SKPAL={elec:{W:'#fff8dc',G:'#ffd84a',B:'#ffb300',E:'#ffffff',J:'#a07a10',S:'#3a2a08'},
 gold:{W:'#fff1a8',G:'#d9a62b',B:'#ffd23f',E:'#fffbe0',J:'#a87a12',S:'#4a3306',M:'#ffd966',Z:'#e0b030',Q:'#fff2b8',T:'#ffe27a',Y:'#fff6b0',O:'#ffb000'},
 diamond:{W:'#effdff',G:'#7fe8ff',B:'#2fc4f2',E:'#ffffff',J:'#2a8ab0',S:'#0a2a44',M:'#d0f6ff',Z:'#9fe8ff',Q:'#ffffff',T:'#bff5ff',Y:'#e8ffff',O:'#6fdcff'}};
 function bolt(ctx,q,ov){

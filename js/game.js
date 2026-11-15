@@ -414,7 +414,7 @@ const overlap=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
 /* ---------- companion Pip ---------- */
 const BSPD=62,BRUN=100;
 const BOT={};
-function botInit(){Object.assign(BOT,{st:'none',placed:false,x:0,y:0,vx:0,vy:0,face:1,onGround:false,ground:null,jl:1,hp:4,parts:{leg:0,spring:0,arm:0,tank:0},cool:0,heat:0,coolT:0,plan:null,tgt:null,rpT:0,stuck:0,fly:false,fuel:100,rk:false,wt:0,hug:0,hugOk:false,carried:false,carryT:0,dieT:0,healT:0,shOn:false,shA:0,shFl:0,shT:0,invT:0,jt:0,lad:null,mission:'',stn:null,stnT:0,jmul:1,spdm:1,djT:0,say1:false,say2:false,trace:[],edgeT:0,shK:0,away:false,awayT:0,hugReq:0,dbgAct:'',pg:null,pgx:0,landT:0,drop:null});}
+function botInit(){Object.assign(BOT,{st:'none',placed:false,x:0,y:0,vx:0,vy:0,face:1,onGround:false,ground:null,jl:1,hp:4,parts:{leg:0,spring:0,arm:0,tank:0},cool:0,heat:0,coolT:0,plan:null,tgt:null,rpT:0,stuck:0,fly:false,fuel:100,rk:false,wt:0,hug:0,hugOk:false,carried:false,carryT:0,dieT:0,healT:0,shOn:false,shA:0,shFl:0,shT:0,invT:0,jt:0,lad:null,mission:'',stn:null,badStn:null,stnT:0,jmul:1,spdm:1,djT:0,say1:false,say2:false,trace:[],edgeT:0,shK:0,away:false,awayT:0,hugReq:0,dbgAct:'',pg:null,pgx:0,landT:0,drop:null});}
 botInit();
 const botNearP=()=>Math.abs(P.x-BOT.x)<26&&Math.abs(P.y-BOT.y)<28;
 const pipSay=t=>say('Pip: '+t);
@@ -459,7 +459,7 @@ if(B.st==='sleep'){B.st='wake';B.wt=0;B.say1=B.say2=false;P.hugT=0;return true}
 if(B.st==='broken'||B.carried||(B.st==='live'&&B.hp<4&&!(P.parts.leg||nBroken()>=3&&!B.parts.leg))){if(B.carried){if(!P.onGround){say('Đứng vững mới thả được');return true}B.carried=false;B.x=P.x+P.face*8;B.y=P.y;B.vx=B.vy=0;B.ground=P.ground;B.onGround=true;say('Thả Pip xuống')}else{B.carried=true;P.face=P.face;B.plan=null;B.mission='';say('Đã cõng Pip — tìm trạm sửa!')}return true}
 if(B.st==='live'){P.carried=true;B.mission='carry';B.plan=null;B.carryT=0;B.stn=null;B.stnT=0;B.spdm=0.8;B.jmul=0.88;pipSay('Leo lên lưng mình, đi sửa nè!');return true}
 return false}
-function botStation(br,range,kind){let best=null,bd=1e9;for(let r=Math.max(0,br-range);r<=br+range;r++){const ob=W.rows.get(r);if(!ob)continue;for(const o of ob){if(o.k==='station'&&(!kind||o.st===kind)){const d=Math.abs(r-br);if(d<bd){bd=d;best=o}}}}
+function botStation(br,range,kind,ex){let best=null,bd=1e9;for(let r=Math.max(0,br-range);r<=br+range;r++){const ob=W.rows.get(r);if(!ob)continue;for(const o of ob){if(o.k==='station'&&o!==ex&&(!kind||o.st===kind)){const d=Math.abs(r-br);if(d<bd){bd=d;best=o}}}}
 if(!best)return null;const sx=best.x+best.w/2,bot=best.y+best.h;for(const o of nearObjs(Math.round(-bot/ROW_H)-2,Math.round(-bot/ROW_H)+2)){if(o.k==='plat'&&sx>o.x&&sx<o.x+o.w&&Math.abs(topAt(o,sx)-bot)<7)return{o:best,plat:o,x:sx}}return null}
 const platOK=(o,t)=>{if(o.k!=='plat'||o.t==='hot'||o.sdir||o.solidNow===false)return false;if(o.fade&&o.off>0)return false;if(o.flick&&((T+(t||0)+o.flick.ph)%4)>2.3)return false;if(o.crum&&o.cs===1)return false;return true};
 function simEdge(a,q,lx,drop,allowRk){const B=BOT,rf=-B.y/ROW_H,g=GRAV*gravMul(rf),jm=jmAt(rf)*B.jmul;const tx=clamp(lx,q.x+5,q.x+q.w-5),qt=topAt(q,tx);
@@ -490,7 +490,7 @@ if(Math.abs(topAt(cur,clamp(tx2,cur.x,cur.x+cur.w))-tt)<7&&tx2>=cur.x&&tx2<=cur.
 if(best===start)return null;const edges=[];for(let n=best;n!==start;n=nodes.get(n).p)edges.unshift(nodes.get(n).e);return{from:start,edges,goal}}
 function botFindGoal(){const B=BOT,br=Math.round(-B.y/ROW_H);
 if(B.mission==='carry'){if(!B.stn||B.stnT<=0){B.stn=botStation(br,40,'rep')||botStation(br,40);B.stnT=1.5}if(B.stn)return{plat:B.stn.plat,x:B.stn.x};return null}
-if(B.mission==='heal'){if(!B.stn||B.stnT<=0){B.stn=botStation(br,34,'rep');B.stnT=1.5}if(B.stn)return{plat:B.stn.plat,x:B.stn.x};B.mission=''}
+if(B.mission==='heal'){if(!B.stn||B.stnT<=0){B.stn=botStation(br,34,'rep',B.badStn);B.stnT=1.5}if(B.stn)return{plat:B.stn.plat,x:B.stn.x};B.mission=''}
 if(P.ground&&P.onGround&&P.ground.k==='plat'){B.pg=P.ground;B.pgx=P.x}
 if((B.pAir||0)>0.8&&!P.carried){const pr=Math.round(-P.y/ROW_H),tr=clamp(pr,br-8,br+8);let best=null,bd=1e9;for(let d=0;d<=5&&!best;d++)for(const r of(d?[tr-d,tr+d]:[tr])){const ob=W.rows.get(r);if(!ob)continue;for(const o of ob)if(o.k==='plat'&&o.main&&platOK(o,0)&&o.t!=='hot'){const dx=Math.abs(o.x+o.w/2-P.x)+Math.abs(r-tr)*12;if(dx<bd){bd=dx;best=o}}}if(best&&best!==B.ground)return{plat:best,x:clamp(P.x,best.x+4,best.x+best.w-4)}}
 if(!B.pg)return null;return{plat:B.pg,x:noSpk(B.pg,clamp(P.x-P.face*18,B.pg.x+4,B.pg.x+B.pg.w-4))}}
@@ -552,12 +552,13 @@ if(B.st!=='live')return;
 {const zi=zoneIdx(rp);if(zi===4){if(B.coolT>0)B.coolT-=dt;else{B.heat+=0.45*dt;if(B.heat>60&&B.cool>0){B.cool--;B.coolT=10;B.heat=0;emit(10,B.x,B.y-10,70,'#9fe8ff',0.5,0)}}if(B.heat>=100){botBreak();return}}else B.heat=Math.max(0,B.heat-6*dt);
 for(const o of near){if(o.k==='coin'&&!W.col.has(o.id)&&Math.abs(B.x-(o.x+5))<13&&Math.abs(B.y-8-(o.y+5))<16){W.col.add(o.id);P.coins++;emit(6,o.x+5,o.y+5,50,'#ffe066',0.35,0)}
 else if(o.k==='station'&&B.onGround&&Math.abs(B.x-(o.x+o.w/2))<14&&Math.abs(B.y-(o.y+o.h))<6){if(o.st==='rep'&&B.hp<4){B.healT+=dt;if(B.healT>1.2){B.healT=0;botRepair();emit(8,B.x,B.y-10,60,'#5ef08a',0.5,-50)}}else if(o.st==='cool'&&B.cool<1&&P.coins>=10){P.coins-=10;B.cool=1;emit(8,B.x,B.y-10,60,'#9fe8ff',0.5,-50);pipSay('Mình mua băng làm mát!')}}}
-if(B.mission==='heal'&&B.hp>=4)B.mission='';if(!B.mission&&B.hp<4&&!P.carried&&B.stnT<=0){B.stnT=2;if(botStation(rp,34,'rep'))B.mission='heal'}}
+if(B.mission==='heal'&&B.hp>=4)B.mission='';if(!B.mission&&B.hp<4&&!P.carried&&B.stnT<=0){B.stnT=2;if(botStation(rp,34,'rep',B.badStn))B.mission='heal'}}
 // hug (before UFO)
 if(B.hugReq>0){B.hugReq-=dt;if(P.onGround&&Math.hypot(B.x-P.x,B.y-P.y)<130){B.hugReq=0;B.hug=1.6;P.hugT=1.6;P.vx=0}else if(B.hugReq<=0){B.hugReq=0;B.hugOk=true;ufoCall()}}
 if(B.hug>0){B.hug-=dt;B.face=P.x>=B.x?1:-1;botMove(dt,near,0);B.tgt=null;if(B.hug<=0){B.hugHeart=false;B.hugOk=true;pipSay('Hẹn gặp lại trên đó nhé!');ufoCall()}return}
 // fly (chase)
 const far=Math.abs(B.y-P.y)>560;B.offT=far?(B.offT||0)+dt:0;
+if(B.mission==='heal'&&B.stuck>5&&!B.lad){B.badStn=B.stn;B.mission='';B.stn=null;B.stnT=6;B.stuck=0;B.plan=null}
 if(!B.fly&&!P.carried&&(B.offT>4||B.stuck>5)&&!B.lad&&!(B.mission==='heal')){B.fly=true;B.flyWhy=B.offT>4?'far':'stuck';B.flyN=(B.flyN||0)+1;B.plan=null;B.stuck=0;
 if(B.offT>4){B.x=clamp(P.x+(Math.random()-0.5)*90,14,WW-14);B.y=B.y>P.y?cam.y+VH+36:cam.y-36;B.vx=0;B.vy=0;B.onGround=false;B.ground=null}}
 if(B.fly){B.rk=true;B.plan=null;B.onGround=false;B.ground=null;const tx=P.x-P.face*16,ty=P.y-2,vxT=clamp((tx-B.x)*1.5,-70,70),vyT=clamp((ty-B.y)*1.5,-105,90);

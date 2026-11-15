@@ -294,7 +294,7 @@ function isPortRow(r){return portA(r)||(r>=7&&portA(r-7))}
 function isRepRow(r){return r>0&&r%22==11&&!COOLROWS.has(r)&&zoneIdx(r)<9?true:(r>0&&r%22==11&&zoneIdx(r)>=9)}
 function p9(d){d=Math.max(0,d);return d<120?20*d:d<360?2400+36*(d-120):11040+70*(d-360)}
 function ptsOf(rf){const zi=zoneIdx(rf);if(zi===9)return ZC[9]+p9(rf-ZS[9]);return ZC[zi]+(rf-ZS[zi])/STEP_ROWS*ZW[zi]}
-const bhStage=rf=>{const d=rf-ZS[9];return d<0?0:d<120?1:d<360?2:3};const BHN=['','Chân trời sự kiện','Lốc xoáy cháy','The Infernal Darkness'],BHH=['','Gió hút mạnh dần. Đi tiếp','Mảnh cháy bay qua: dùng shield','Bóng tối địa ngục. Trạm đã hỏng hết'];
+const bhStage=rf=>{const d=rf-ZS[9];return d<0?0:d<120?1:d<360?2:3};const BHN=['','Chân trời sự kiện','Lốc xoáy cháy','The Forever Darkness'],BHH=['','Gió hút mạnh dần. Đi tiếp','Mảnh cháy bay qua: dùng shield','Bóng tối vĩnh cửu. Trạm đã hỏng hết'];
 function altOf(hpx){const rf=Math.max(0,hpx/ROW_H),zi=zoneIdx(rf),z=ZONES[zi];const u=clamp((rf-ZS[zi])/(z.rows>1e6?300:z.rows),0,1);if(zi<=2)return z.a0+(z.a1-z.a0)*u;return Math.exp(Math.log(z.a0)+(Math.log(z.a1)-Math.log(z.a0))*u)}
 function fmtAlt(v){const N=n=>n>=100?Math.round(n).toLocaleString('en-US'):n.toFixed(n>=10?1:2);
 if(v<1000)return N(v)+' m';if(v<1e12)return N(v/1000)+' km';if(v<9.4607e15)return N(v/1e12)+' tỷ km';const ly=v/9.4607e15;

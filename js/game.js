@@ -833,7 +833,7 @@ else{if(nBroken()>=4){die();return}run.hv++;P.cryT=2.4;breakPart();breakPart();s
 }
 
 function calcReport(rs,mh){const zi=zoneIdx(Math.max(0,mh)/ROW_H),hp=Math.floor(ptsOf(Math.max(0,mh)/ROW_H));const L=[];
-L.push({t:'Điểm độ cao',s:fmtAlt(altOf(mh))+' · '+ZONES[zi].n+' · tầng '+(zi+1)+' · quy đổi 8%',v:Math.floor(hp*0.08)});
+L.push({t:'Điểm độ cao',s:fmtAlt(altOf(mh))+' · '+ZONES[zi].n+' · tầng '+(zi+1)+' · quy đổi 8%'+(hp>ZC[9]?', hố đen 40%':''),v:Math.floor(Math.min(hp,ZC[9])*0.08+Math.max(0,hp-ZC[9])*0.4)});
 L.push({t:'Coin nhặt ×'+rs.col,s:'1 RoboCoin mỗi coin',v:rs.col});
 L.push({t:'Thiên thạch chắn ×'+rs.blk,s:'3 RoboCoin mỗi vật chắn',v:rs.blk*3});
 const sub=L.reduce((a,l)=>a+l.v,0);let best=0;try{best=parseFloat(localStorage.getItem('bcBestH'))||0}catch(e){}

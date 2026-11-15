@@ -383,7 +383,7 @@ let lastSh=false,nearLadder=null,nearPortal=null,lastLm=false,windX=0;let RC=0,r
 const owned=k=>!k.price||OWN.has(k.id);
 function saveWallet(){try{localStorage.setItem('bcRC',String(RC));localStorage.setItem('bcOwn',JSON.stringify([...OWN]))}catch(e){}}
 let T=0,timer=0,started=false,maxH=0,lastZone=-1,mode='title',nearStation=null,saveClock=0,hudClock=0,shake=0;
-let dispH=null,legacyPos=false;let rocks=[],astT=4;const ufo={ph:'idle',t:0,wait:25,ux:0,uy:0,fy:0,dirx:1,spd:30,x:0,y:0,vx:0,sc:1,tilt:0,sc0:1,plat:null,jt:0,jx0:0,jy0:0,rt:0,x0:0,y0:0,th0:0,seated:false,hopping:false,yb:0,y1:0,em:0,side:1};
+let dispH=null,dispP=0,legacyPos=false;let rocks=[],astT=4;const ufo={ph:'idle',t:0,wait:25,ux:0,uy:0,fy:0,dirx:1,spd:30,x:0,y:0,vx:0,sc:1,tilt:0,sc0:1,plat:null,jt:0,jx0:0,jy0:0,rt:0,x0:0,y0:0,th0:0,seated:false,hopping:false,yb:0,y1:0,em:0,side:1};
 const inp={shx:0,shy:0,shHeld:false,thrHeld:false,jumpHeld:false,jumpP:false,thrustP:false,actP:false,kx:0,ky:0,sx:0,sy:0};
 inp.ax=()=>inp.kx?inp.kx:(Math.abs(inp.sx)<0.18?0:inp.sx);
 inp.ay=()=>inp.ky?inp.ky:(Math.abs(inp.sy)<0.3?0:inp.sy);
@@ -802,7 +802,7 @@ else{if(nBroken()>=4){die();return}run.hv++;P.cryT=2.4;breakPart();breakPart();s
 }
 
 function calcReport(rs,mh){const zi=zoneIdx(Math.max(0,mh)/ROW_H),hp=Math.floor(ptsOf(Math.max(0,mh)/ROW_H));const L=[];
-L.push({t:'Độ cao '+fmtAlt(altOf(mh)),s:ZONES[zi].n+' · tầng '+(zi+1),v:hp});
+L.push({t:'Điểm độ cao',s:fmtAlt(altOf(mh))+' · '+ZONES[zi].n+' · tầng '+(zi+1),v:hp});
 L.push({t:'Coin nhặt ×'+rs.col,s:'3 RoboCoin mỗi coin',v:rs.col*3});
 L.push({t:'Thiên thạch chắn ×'+rs.blk,s:'10 RoboCoin mỗi viên',v:rs.blk*10});
 const sub=L.reduce((a,l)=>a+l.v,0);let best=0;try{best=parseFloat(localStorage.getItem('bcBestH'))||0}catch(e){}
@@ -1072,10 +1072,10 @@ function updateHUD(dt){
 const lm=!!P.onLadder;if(lm!==lastLm){lastLm=lm;$('dpad').classList.toggle('v',lm);$('bleft').innerHTML=lm?'&#9650;':'&#9664;';$('bright').innerHTML=lm?'&#9660;':'&#9654;';inp.sx=0;inp.sy=0;$('bleft').classList.remove('on');$('bright').classList.remove('on')}
 const h=-P.y,zi=zoneIdx(h/ROW_H);
 $('timer').textContent=fmtT(timer);
-if(dispH===null||Math.abs(h-dispH)<0.5)dispH=h;else dispH+=(h-dispH)*Math.min(1,dt*2.2);$('alt').textContent=fmtAlt(altOf(dispH));
+const tgtP=Math.floor(ptsOf(Math.max(0,maxH)/ROW_H));if(dispH===null)dispP=tgtP;if(dispH===null||Math.abs(h-dispH)<0.5)dispH=h;else dispH+=(h-dispH)*Math.min(1,dt*2.2);if(dispP<tgtP)dispP=Math.min(tgtP,dispP+Math.max(60*dt,(tgtP-dispP)*dt*5));$('alt').textContent=Math.floor(dispP)+' điểm';
 {const wn=wind(h/ROW_H);$('zn').textContent=ZONES[zi].n+(()=>{const r0=h/ROW_H;for(const p of PL)if(p.n&&Math.abs(r0-p.row)<14)return' · '+p.n;return''})()+(h/ROW_H>250||gravOv!==null?'  g×'+gravAt(h/ROW_H).toFixed(2):'')+(Math.abs(wn)>10?'  gió '+(wn>0?'→':'←')+Math.round(Math.abs(wn)/10):'')}
 setCoinTxt();
-$('best').textContent='Cao nhất: '+fmtAlt(altOf(maxH));
+{let bp=0;try{bp=parseFloat(localStorage.getItem('bcBestH'))||0}catch(e){}$('best').textContent='Kỷ lục: '+Math.floor(ptsOf(Math.max(bp,maxH)/ROW_H))+' điểm'}
 const pn={leg:'Chân',spring:'Lò xo',arm:'Tay',tank:'Rocket'};
 $('parts').innerHTML=Object.keys(pn).map(k=>'<span class="pt'+(P.parts[k]?' bad':'')+'">'+pn[k]+'</span>').join('');
 const hw=$('heatw');if(zi==4||P.heat>1||P.armor&&zi>=4){hw.style.display='block';$('heat').style.width=(P.armor?0:P.heat)+'%';$('heat').style.background=P.armor?'#9fb4c8':P.coolT>0?'#4dabf7':P.heat>78?'#ff4d6d':P.heat>45?'#ff9a3c':'#ffd23f'}else hw.style.display='none';

@@ -676,7 +676,7 @@ P.hugT=Math.max(0,(P.hugT||0)-dt);const lock=P.cryT>0||P.angryT>0||P.shutT>0||P.
 P.invT=Math.max(0,P.invT-dt);P.coolT=Math.max(0,P.coolT-dt);P.buffT=Math.max(0,P.buffT-dt);P.ladCd=Math.max(0,P.ladCd-dt);P.landT=Math.max(0,P.landT-dt);P.djT=Math.max(0,P.djT-dt);P.coyote-=dt;P.jumpBuf-=dt;P.pcd=Math.max(0,P.pcd-dt);
 const nb=nBroken();
 {const wantSh=inp.shHeld&&!lock&&!P.onLadder;if(wantSh&&!P.shOn){P.shA=P.face>0?0:Math.PI;snd.sfx('shield')}P.shOn=wantSh;P.shK=clamp((P.shK||0)+(P.shOn?dt/0.16:-dt/0.12),0,1);P.shFl=Math.max(0,P.shFl-dt);
-if(P.shOn){const avx=inp.kx||inp.shx,avy=inp.kx||inp.ky?inp.ky:inp.shy;if(Math.hypot(avx,avy)>0.3)P.shA=Math.atan2(avy,avx)}}
+if(P.shOn){let avx=inp.shx,avy=inp.shy;if(Math.hypot(avx,avy)<=0.3){avx=inp.kx;avy=inp.ky}if(Math.hypot(avx,avy)>0.3)P.shA=Math.atan2(avy,avx)}}
 const shielding=false;
 let ax=lock?0:inp.ax(),ay=lock?0:inp.ay();
 if(!started&&!lock&&(ax||ay||inp.jumpP||inp.thrustP))started=true;

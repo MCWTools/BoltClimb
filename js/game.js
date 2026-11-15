@@ -391,7 +391,7 @@ const parts=[];
 function emit(n,x,y,sp,col,life,g,dir){for(let i=0;i<n;i++){const a=dir===undefined?Math.random()*6.28:dir+(Math.random()-0.5)*1.2;const s=sp*(0.4+Math.random()*0.6);parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:life*(0.6+Math.random()*0.4),l0:life,col,g:g||0})}}
 const nBroken=()=>P.parts.leg+P.parts.spring+P.parts.arm+P.parts.tank;
 let godMode=false,godAll=false;
-function breakPart(){if(godMode)return;const names=['leg','spring','arm','tank'].filter(k=>!P.parts[k]);if(!names.length)return;const k=names[Math.floor(Math.random()*names.length)];P.parts[k]=1;snd.sfx('break');emit(14,P.x,P.y-10,90,'#ffe066',0.6,200);say('Hỏng: '+({leg:'chân',spring:'lò xo',arm:'tay',tank:'bình thrust'})[k])}
+function breakPart(){if(godMode)return;const names=['leg','spring','arm','tank'].filter(k=>!P.parts[k]);if(!names.length)return;const k=names[Math.floor(Math.random()*names.length)];P.parts[k]=1;snd.sfx('break');emit(14,P.x,P.y-10,90,'#ffe066',0.6,200);say('Hỏng: '+({leg:'chân',spring:'lò xo',arm:'tay',tank:'rocket'})[k])}
 function repairWorst(n){const order=['leg','spring','arm','tank'];let c=0;for(const k of order){if(P.parts[k]&&c<n){P.parts[k]=0;c++}}if(c){snd.sfx('repair');emit(16,P.x,P.y-10,80,'#5ef08a',0.7,-60);say(c>1?'Đã sửa xong':'Đã sửa 1 bộ phận')}}
 let msgT=0;function nm(t){return t}
 function say(t){const m=$('msg');m.textContent=nm(tl(t));m.style.opacity=1;msgT=2.2}
@@ -706,7 +706,7 @@ else if((!P.parts.spring||godAll)&&(P.jumpsLeft>0||godAll)){if(!godAll)P.jumpsLe
 }
 if(P.vy>=0)P.jumpCut=false;
 // thrust
-if(inp.thrustP&&P.parts.tank)say('Bình thrust hỏng');
+if(inp.thrustP&&P.parts.tank)say('Rocket hỏng');
 const wantR=inp.thrHeld&&!lock&&!P.parts.tank&&!shielding;if(wantR&&!P.rocketOn&&P.fuel>=8){P.rocketOn=true;P.onLadder=null}if(!wantR)P.rocketOn=false;
 if(P.rocketOn){if(!godAll)P.fuel-=60*dt;if(P.fuel<=0){P.fuel=0;P.rocketOn=false;say('Hết nhiên liệu')}}else P.fuel=Math.min(100,P.fuel+(P.buffT>0?10:5)*dt);
 // horizontal
@@ -737,7 +737,7 @@ else{P.vy=Math.min(560,P.vy+g0*dt)}
 // move X
 P.x=clamp(P.x+P.vx*dt,8,WW-8);
 const hb=()=>({x:P.x-PW/2,y:P.y-PH2,w:PW,h:PH2});
-for(const o of near){const th=o.k==='plat'&&(o.thick||o.sdir)&&o.solidNow&&!(P.onLadder&&ladTop(P.onLadder,o));if(!o.solid&&!th)continue;const b=hb();if(th?sideBlock(o,b):(P.y>o.y+0.01&&P.y-PH2<o.y+o.h&&b.x<o.x+o.w&&b.x+b.w>o.x)){if(th&&!P.onGround&&!P.onLadder){const tp=topAt(o,clamp(P.x,o.x,o.x+o.w)),dp=P.y-tp;if(dp>-1&&dp<=8){P.y=tp-0.05;if(P.vy>0)P.vy=Math.min(P.vy,60);continue}const bt2=bodyBot(o,clamp(P.x,o.x,o.x+o.w));if(P.vy<=0&&P.y-PH2>bt2-7){P.y=bt2+PH2;P.vy=0;continue}}if(P.x<o.x+o.w/2)P.x=o.x-PW/2;else P.x=o.x+o.w+PW/2;P.vx=0}}
+for(const o of near){const th=o.k==='plat'&&(o.thick||o.sdir)&&o.solidNow&&!(P.onLadder&&ladTop(P.onLadder,o));if(!o.solid&&!th)continue;const b=hb();if(th?sideBlock(o,b):(P.y>o.y+0.01&&P.y-PH2<o.y+o.h&&b.x<o.x+o.w&&b.x+b.w>o.x)){if(th&&!P.onGround&&!P.onLadder){const tp=topAt(o,clamp(P.x,o.x,o.x+o.w)),dp=P.y-tp;if(dp>-1&&dp<=8){P.y=tp-0.05;if(P.vy>0)P.vy=Math.min(P.vy,60);continue}const bt2=bodyBot(o,clamp(P.x,o.x,o.x+o.w));if(P.y-PH2>bt2-7){P.y=bt2+PH2;if(P.vy<0)P.vy=0;continue}}if(P.x<o.x+o.w/2)P.x=o.x-PW/2;else P.x=o.x+o.w+PW/2;P.vx=0}}
 P.wall=0;
 for(const o of near){if(!(o.solid&&o.climb))continue;if(P.y>o.y+0.01&&P.y-PH2<o.y+o.h){if(Math.abs(P.x+PW/2-o.x)<1.4)P.wall=1;else if(Math.abs(P.x-PW/2-(o.x+o.w))<1.4)P.wall=-1}}
 // move Y
@@ -794,9 +794,9 @@ inp.jumpP=false;inp.thrustP=false;inp.actP=false;
 }
 function onLand(fall){
 P.landT=0.24;snd.sfx('land',fall);emit(6,P.x,P.y,50,'#c9ced8',0.3,80,-1.57);
-if(fall>330&&!godMode){
-if(fall<430){P.landT=0.4}
-else if(fall<520){run.hurt++;P.cryT=1.4;breakPart();shake=0.25}
+if(fall>420&&!godMode){
+if(fall<600){P.landT=0.4}
+else if(fall<800){run.hurt++;P.cryT=1.4;breakPart();shake=0.25}
 else{if(nBroken()>=4){die();return}run.hv++;P.cryT=2.4;breakPart();breakPart();shake=0.4}
 }
 }
@@ -1076,7 +1076,7 @@ if(dispH===null||Math.abs(h-dispH)<0.5)dispH=h;else dispH+=(h-dispH)*Math.min(1,
 {const wn=wind(h/ROW_H);$('zn').textContent=ZONES[zi].n+(()=>{const r0=h/ROW_H;for(const p of PL)if(p.n&&Math.abs(r0-p.row)<14)return' · '+p.n;return''})()+(h/ROW_H>250||gravOv!==null?'  g×'+gravAt(h/ROW_H).toFixed(2):'')+(Math.abs(wn)>10?'  gió '+(wn>0?'→':'←')+Math.round(Math.abs(wn)/10):'')}
 setCoinTxt();
 $('best').textContent='Cao nhất: '+fmtAlt(altOf(maxH));
-const pn={leg:'Chân',spring:'Lò xo',arm:'Tay',tank:'Bình'};
+const pn={leg:'Chân',spring:'Lò xo',arm:'Tay',tank:'Rocket'};
 $('parts').innerHTML=Object.keys(pn).map(k=>'<span class="pt'+(P.parts[k]?' bad':'')+'">'+pn[k]+'</span>').join('');
 const hw=$('heatw');if(zi==4||P.heat>1||P.armor&&zi>=4){hw.style.display='block';$('heat').style.width=(P.armor?0:P.heat)+'%';$('heat').style.background=P.armor?'#9fb4c8':P.coolT>0?'#4dabf7':P.heat>78?'#ff4d6d':P.heat>45?'#ff9a3c':'#ffd23f'}else hw.style.display='none';
 let bf='';if(P.armor)bf+='[Giáp nhiệt] ';if(P.coolT>0)bf+='[Làm mát '+Math.ceil(P.coolT)+'s] ';if(P.buffT>0)bf+='[Nâng cấp '+Math.ceil(P.buffT)+'s] ';if(P.freeRep>0)bf+='[Đang sửa '+Math.ceil(P.freeRep)+'s] ';$('buffs').textContent=bf;

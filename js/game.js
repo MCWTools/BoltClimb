@@ -25,7 +25,7 @@ const K='#141826';
 
 /* ---------- Bolt sprite ---------- */
 const BC={K:'#141826',W:'#eef2f8',G:'#9aa6bd',S:'#1e2a48',E:'#5ef0ff',R:'#ff4d6d',B:'#4d7cff',O:'#ff9a3c',Y:'#ffe066',J:'#5a6580',T:'#7fd4ff',M:'#c9ced8',Z:'#9fb4c8',Q:'#e6f1ff'};
-const SKPAL={elec:{W:'#fff6c2',G:'#e8b923',B:'#ffc400',E:'#ffffff',J:'#8a6a10',S:'#3a2a05',M:'#ffe58a',Z:'#e8c040',Q:'#fff8d8'},
+const SKPAL={elec:{B:'#ffc400'},
 gold:{W:'#fff1a8',G:'#d9a62b',B:'#ffd23f',E:'#fffbe0',J:'#a87a12',S:'#4a3306',M:'#ffd966',Z:'#e0b030',Q:'#fff2b8',T:'#ffe27a',Y:'#fff6b0',O:'#ffb000'},
 diamond:{W:'#effdff',G:'#7fe8ff',B:'#2fc4f2',E:'#ffffff',J:'#2a8ab0',S:'#0a2a44',M:'#d0f6ff',Z:'#9fe8ff',Q:'#ffffff',T:'#bff5ff',Y:'#e8ffff',O:'#6fdcff'}};
 function bolt(ctx,q,ov){
@@ -1039,7 +1039,7 @@ if(ufo.ph==='ride'||(ufo.ph==='drop'&&!ufo.hopping)){}else{if(P.invT>0&&Math.flo
 cx.save();cx.translate(px,py-24);cx.scale(P.face<0?-1:1,1);cx.drawImage(img,-12-(img.pad||0),-(img.pad||0));cx.restore();cx.globalAlpha=1}
 if(ufo.ph==='call'||(ufo.ph==='swoop'&&ufo.t<5)){const bx=px,by=py-24-8;cx.fillStyle=K;cx.fillRect(bx-9,by-12,18,12);cx.fillStyle='#fff1a8';cx.fillRect(bx-8,by-11,16,10);cx.fillStyle='#ff4d6d';const bb=Math.floor(T*6)%2?0:1;for(const o of [-5,2]){cx.fillRect(bx+o,by-10+bb,2,5);cx.fillRect(bx+o,by-4+bb,2,2)}cx.fillStyle=K;cx.fillRect(bx-1,by,2,2)}
 if(showHit){cx.save();cx.lineWidth=1;cx.strokeStyle='#00ff66';cx.strokeRect(px-PW/2+0.5,py-PH2+0.5,PW-1,PH2-1);cx.fillStyle='#ff2d55';cx.fillRect(px-0.5,py-0.5,1,1);cx.restore()}
-{const sp=mySkin().ov.sparkle;if(sp&&!(ufo.ph==='ride'||(ufo.ph==='drop'&&!ufo.hopping))){cx.save();cx.globalCompositeOperation='lighter';for(let i=0;i<(sp===2?5:3);i++){const ph=T*(sp===2?5:3)+i*2.1,k=(Math.sin(ph)+1)/2;if(k<0.55)continue;const sx=px+Math.round(Math.sin(i*5.3+Math.floor(ph/6.28)*3)*7),sy=py-24+Math.round(Math.cos(i*3.7+Math.floor(ph/6.28)*2)*8+10);cx.fillStyle=sp===2?'#e8ffff':'#fff6b0';cx.fillRect(sx,sy,1,1);if(k>0.85){cx.fillRect(sx-1,sy,3,1);cx.fillRect(sx,sy-1,1,3)}}cx.restore()}}
+{const sp=mySkin().ov.sparkle;if(sp&&!(ufo.ph==='ride'||(ufo.ph==='drop'&&!ufo.hopping))){cx.save();cx.globalCompositeOperation='lighter';const n=sp===2?9:6;for(let i=0;i<n;i++){const ph=T*(sp===2?2.6:1.8)+i*1.7,life=ph-Math.floor(ph),sd=Math.floor(ph)*7+i*13,k=Math.sin(life*Math.PI);if(k<0.25)continue;const sx=px+Math.round(((Math.sin(sd*1.9)+1)/2-0.5)*16),sy=py-24+Math.round(2+((Math.sin(sd*3.1+1)+1)/2)*20);cx.fillStyle=sp===2?'#e8ffff':'#fff2a0';cx.fillRect(sx,sy,1,1);if(k>0.55){cx.fillRect(sx-1,sy,3,1);cx.fillRect(sx,sy-1,1,3)}if(k>0.88){cx.fillRect(sx-2,sy,5,1);cx.fillRect(sx,sy-2,1,5)}}cx.restore()}}
 drawMyShield(px,py-12,P.shA,P.shK||0,P.shFl)}
 // ufo
 if(ufo.ph!=='idle'){const u=ufo;let sx,sy;if(u.ph==='fly'||u.ph==='call'){sx=u.ux;sy=u.uy}else{sx=u.x-camX;sy=u.y-camY}

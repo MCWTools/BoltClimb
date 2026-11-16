@@ -1179,18 +1179,18 @@ float rn=r/rc,s=max(sin(inc),0.24);vec2 dq=vec2(p.x/rc,p.y/(rc*s));float R=lengt
 float nearM=(1.0-smoothstep(-0.12,0.04,p.y/rc))*(1.0-smoothstep(0.3,1.0,inc));
 float aa=max(0.01,1.2*px/rc);float sh=1.0-smoothstep(1.0-aa,1.0,rn);
 float hiIn=hi*amt;vec4 M=vec4(0.0,0.0,0.0,1.0);if(hiIn>0.001&&rn<10.0){vec3 dF;M=hiMarch(p/rc,dF);float se2=sin(inc),ce2=cos(inc);vec2 qq=vec2(dF.x,dot(dF,vec3(0.0,ce2,se2)))/max(dot(dF,vec3(0.0,-se2,ce2)),0.25)*(8.0/0.74)*rc;su=mix(su,hole+vec2(qq.x/asp,-qq.y),hiIn*0.3);}
-vec3 col=bgc*(1.0-sh*amt*(1.0-hiIn));
+bgc=mix(bgc,vec3(0.03,0.012,0.04),hi);vec3 col=bgc*(1.0-sh*amt*(1.0-hi));
 vec4 gb=texture2D(texB,su);float inbB=step(0.0,su.x)*step(su.x,1.0)*step(0.0,su.y)*step(su.y,1.0);
-col=mix(col,gb.rgb*mix(1.0,mix(0.55,1.0,smoothstep(1.0,6.0,rn)),hiIn),gb.a*inbB*mix(mix(1.0,smoothstep(0.97,1.04,rn),amt),1.0,hiIn));
+col=mix(col,gb.rgb*mix(1.0,mix(0.55,1.0,smoothstep(1.0,6.0,rn)),hiIn),gb.a*inbB*mix(mix(1.0,smoothstep(0.97,1.04,rn),amt),1.0,hi));
 float fo=1.0-smoothstep(2.5,6.5,rn);col=mix(col,col*mix(1.0,M.a,fo)+M.rgb*amt*fo,hiIn);
-vec3 dsc=discAt(R,phi,dq.x/R)*mix(1.0-sh,1.0,nearM)*amt*(1.0-hiIn);
+vec3 dsc=discAt(R,phi,dq.x/R)*mix(1.0-sh,1.0,nearM)*amt*(1.0-hi);
 col=col*(1.0-clamp(dot(dsc,vec3(0.45)),0.0,0.92))+dsc;
 float Rd=1.08+max(rn-1.0,0.0)*3.4;float arcA=exp(-(rn-1.0)*1.5)*smoothstep(0.995,1.03,rn);float sy=abs(sin(th));
-vec3 arc=discAt(Rd,th,cos(th))*arcA*mix(0.5,1.0,pow(sy,0.6))*(th>0.0?1.0:0.75)*2.0*amt*(1.0-hiIn);
-col=col*(1.0-clamp(dot(arc,vec3(0.45)),0.0,0.9))+arc;col+=vec3(1.0,0.5,0.14)*exp(-max(R-1.0,0.0)*0.28)*0.32*amt*(1.0-sh);
-float w=max(0.025,1.5*px/rc);col+=vec3(1.0,0.78,0.5)*exp(-pow((rn-1.012)/w,2.0))*(3.2+1.4*(0.5-0.5*cos(th)))*amt*(1.0-hiIn);
+vec3 arc=discAt(Rd,th,cos(th))*arcA*mix(0.5,1.0,pow(sy,0.6))*(th>0.0?1.0:0.75)*2.0*amt*(1.0-hi);
+col=col*(1.0-clamp(dot(arc,vec3(0.45)),0.0,0.9))+arc;col+=vec3(1.0,0.5,0.14)*exp(-max(R-1.0,0.0)*0.28)*0.32*amt*(1.0-sh)*(1.0-hi);
+float w=max(0.025,1.5*px/rc);col+=vec3(1.0,0.78,0.5)*exp(-pow((rn-1.012)/w,2.0))*(3.2+1.4*(0.5-0.5*cos(th)))*amt*(1.0-hi);
 float gl1=exp(-(rn-1.0)*0.75)*smoothstep(0.9,1.1,rn),gl2=exp(-(rn-1.0)*0.22)*smoothstep(0.9,1.1,rn);
-col+=(vec3(1.0,0.3,0.05)*gl1*0.22+vec3(0.9,0.2,0.03)*gl2*0.07)*amt*(1.0-0.85*hiIn);
+col+=(vec3(1.0,0.3,0.05)*gl1*0.22+vec3(0.9,0.2,0.03)*gl2*0.07)*amt*(1.0-hi);
 col+=vec3(1.0,0.86,0.6)*exp(-max(rn-1.0,0.0)*0.33)*0.05*hiIn*amt*M.a;col*=mix(vec3(1.0),vec3(1.12,0.82,0.62),amt*(1.0-0.6*hiIn));
 col=1.0-exp(-col*1.9);col=pow(col,vec3(1.1));
 vec4 g=texture2D(tex,s0);float inb=step(0.0,s0.x)*step(s0.x,1.0)*step(0.0,s0.y)*step(s0.y,1.0);

@@ -1097,21 +1097,25 @@ float h3(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}
 float n3(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(mix(h3(i),h3(i+vec3(1.,0.,0.)),f.x),mix(h3(i+vec3(0.,1.,0.)),h3(i+vec3(1.,1.,0.)),f.x),f.y),mix(mix(h3(i+vec3(0.,0.,1.)),h3(i+vec3(1.,0.,1.)),f.x),mix(h3(i+vec3(0.,1.,1.)),h3(i+vec3(1.,1.,1.)),f.x),f.y),f.z);}
 float f3(vec3 p){float a=0.5,v=0.0;for(int i=0;i<3;i++){v+=a*n3(p);p=p*2.1+vec3(7.3,3.1,5.7);a*=0.5;}return v;}
 float dnz(vec3 pd,float rr,float phx){float an=phx*(0.3+0.55/(rr+0.5));float c=cos(an),s=sin(an);vec2 q=vec2(c*pd.x-s*pd.z,s*pd.x+c*pd.z);return f3(vec3(q*2.2,pd.y*6.0+fp*0.25));}
+vec3 dcol(float t){t=clamp(t,0.0,1.0);vec3 c=mix(vec3(0.20,0.085,0.03),vec3(0.62,0.34,0.12),smoothstep(0.0,0.22,t));c=mix(c,vec3(1.0,0.66,0.26),smoothstep(0.18,0.5,t));c=mix(c,vec3(1.0,0.86,0.55),smoothstep(0.45,0.75,t));return mix(c,vec3(1.0,0.98,0.93),smoothstep(0.72,1.0,t));}
 vec4 hiMarch(vec2 pi,out vec3 dirO){
 vec3 pos=vec3(pi*2.5,14.0),dir=vec3(0.0,0.0,-1.0);float ci=cos(inc),si=sin(inc);vec3 e1=vec3(1.0,0.0,0.0),nm=vec3(0.0,ci,si),e2=vec3(0.0,si,-ci);
-vec3 em=vec3(0.0);float Tr=1.0,cap=0.0,minR=99.0;const float RIN=1.5,ROUT=10.5;float P=8.0,p1=mod(ph,P),p2=mod(ph+P*0.5,P),w1=sin(3.14159265*p1/P);w1*=w1;
-for(int i=0;i<96;i++){float r=length(pos);minR=min(minR,r);if(r<0.35){cap=1.0;break;}if(r>17.0&&dot(pos,dir)>0.0)break;
-vec3 pd=vec3(dot(pos,e1),dot(pos,nm),dot(pos,e2));float rr=length(pd.xz);
-float ds=clamp(min(0.12*r,abs(pd.y)*0.55+0.04),0.04,0.5);
+vec3 em=vec3(0.0);float Tr=1.0,cap=0.0,minR=99.0;const float RIN=1.45,ROUT=11.0;
+for(int i=0;i<170;i++){float r=length(pos);minR=min(minR,r);if(r<0.35){cap=1.0;break;}if(r>18.0&&dot(pos,dir)>0.0)break;
+float y=dot(pos,nm);vec2 xz=vec2(dot(pos,e1),dot(pos,e2));float rr=length(xz);float th=0.02+0.011*rr;
+float ds=clamp(min(0.1*r,abs(y)*0.5+th*0.35),0.018,0.45);
 dir=normalize(dir-pos/(r*r*r)*ds);pos+=dir*ds;
-pd=vec3(dot(pos,e1),dot(pos,nm),dot(pos,e2));rr=length(pd.xz);
-float th=0.07+0.05*rr;float vert=exp(-pd.y*pd.y/(th*th));
-float rad=smoothstep(RIN,RIN+0.5,rr)*pow(1.0-smoothstep(RIN,ROUT,rr),1.5);
-if(rad*vert>0.004){float nz=mix(dnz(pd,rr,p2),dnz(pd,rr,p1),w1);float dens=rad*vert*pow(nz*1.55,2.6)*4.0;
-float tm=pow(RIN/max(rr,0.5),1.05)*1.25;vec3 vw=(-pd.z*e1+pd.x*e2)/max(rr,0.01);float bt=min(0.5*sqrt(1.5/max(rr,0.5)),0.55);float dop=1.0/(1.0-bt*dot(vw,-dir));
-vec3 ec=bb(tm*mix(0.75,1.2,nz)*(0.55+0.5*dop))*pow(dop,2.4)*2.4;
-float a=1.0-exp(-dens*ds*3.2);em+=Tr*a*ec;Tr*=1.0-a;if(Tr<0.01)break;}}
-float ring=exp(-abs(minR-1.09)*38.0)*step(cap,0.5);em+=vec3(1.0,0.82,0.55)*ring*1.5*Tr*(0.8+0.5*dot(dir.xy,vec2(-1.0,0.0)));
+y=dot(pos,nm);xz=vec2(dot(pos,e1),dot(pos,e2));rr=length(xz);th=0.02+0.011*rr;
+float vert=exp(-y*y/(th*th));
+if(vert>0.02&&rr>RIN&&rr<ROUT){float t=pow(RIN/rr,0.72);
+float ang=atan(xz.y,xz.x);float rot=ph*(0.45+0.5/(rr+0.6));float swirl=vn(vec2((ang+rot)*3.0,rr*5.0+fp*0.1));
+float bands=0.84+0.16*sin(rr*10.0+1.1*sin(rr*3.0));
+float prof=smoothstep(RIN,RIN+0.15,rr)*(1.0-smoothstep(3.5,ROUT,rr))*bands*(0.88+0.12*swirl);
+float dens=vert*prof*16.0;float al=1.0-exp(-dens*ds);
+vec3 vw=(-xz.y*e1+xz.x*e2)/max(rr,0.01);float bt=min(0.42*sqrt(1.45/rr),0.45);float dop=1.0/(1.0-bt*dot(vw,-dir));
+vec3 ec=dcol(t*(0.8+0.3*dop))*(0.22+2.3*t*t*t+0.55*t)*pow(dop,2.0)*1.05;
+em+=Tr*al*ec;Tr*=1.0-al;if(Tr<0.01)break;}}
+float ring=exp(-abs(minR-1.09)*60.0)*step(cap,0.5);em+=vec3(1.0,0.95,0.85)*ring*1.4*Tr;
 if(cap>0.5)Tr=0.0;dirO=dir;return vec4(em,Tr);}
 void main(){vec2 uv=vec2(v.x,1.0-v.y);vec2 p=(uv-hole)*vec2(asp,1.0);p.y=-p.y;p/=1.0+suck*2.5;float r=length(p)+1e-4;
 float E2=rc*rc*1.1*amt*amt;vec2 q=p*(1.0-E2/(r*r));
@@ -1136,7 +1140,7 @@ col=col*(1.0-clamp(dot(arc,vec3(0.45)),0.0,0.9))+arc;col+=vec3(1.0,0.5,0.14)*exp
 float w=max(0.025,1.5*px/rc);col+=vec3(1.0,0.78,0.5)*exp(-pow((rn-1.012)/w,2.0))*(3.2+1.4*(0.5-0.5*cos(th)))*amt*(1.0-hiIn);
 float gl1=exp(-(rn-1.0)*0.75)*smoothstep(0.9,1.1,rn),gl2=exp(-(rn-1.0)*0.22)*smoothstep(0.9,1.1,rn);
 col+=(vec3(1.0,0.3,0.05)*gl1*0.22+vec3(0.9,0.2,0.03)*gl2*0.07)*amt;
-col*=mix(vec3(1.0),vec3(1.12,0.82,0.62),amt);
+col+=vec3(1.0,0.86,0.6)*exp(-max(rn-1.0,0.0)*0.33)*0.1*hiIn*amt*M.a;col*=mix(vec3(1.0),vec3(1.12,0.82,0.62),amt*(1.0-0.6*hiIn));
 col=1.0-exp(-col*1.9);col=pow(col,vec3(1.1));
 vec4 g=texture2D(tex,s0);float inb=step(0.0,s0.x)*step(s0.x,1.0)*step(0.0,s0.y)*step(s0.y,1.0);
 float kF=exp(-max(R-1.0,0.0)*0.24)*amt;g.rgb=min(g.rgb*(1.0+kF*vec3(1.3,0.8,0.4))+vec3(1.0,0.5,0.16)*kF*0.5,vec3(1.5))*mix(1.0,0.85,kF*0.2);col=mix(col,g.rgb,g.a*inb);
@@ -1354,12 +1358,24 @@ axe:{rad:1,swing:1,pal:{E:'#f4f8ff',X:'#9fb4c8',H:'#7a4a22',P:'#c9ced8'},rows:['
 };
 const STYC=new Map();
 function styCanvas(id){let c=STYC.get(id);if(c)return c;const d=STY[id],S=4,w=d.rows[0].length,h=d.rows.length;c=document.createElement('canvas');c.width=w*S;c.height=h*S;const q=c.getContext('2d');for(let y=0;y<h;y++)for(let x=0;x<w;x++){const ch=d.rows[y][x];if(ch==='.')continue;q.fillStyle=d.pal[ch]||'#fff';q.fillRect(x*S,y*S,S,S)}c.lw=w;c.lh=h;STYC.set(id,c);return c}
+const SWF=[];
+function swordFrames(){if(SWF.length)return SWF;const N=12,S=32,P=16,L=12,tau=0.5;
+for(let k=0;k<N;k++){const c=document.createElement('canvas');c.width=c.height=S;const q=c.getContext('2d');const px=(x,y,col,al)=>{q.globalAlpha=al==null?1:al;q.fillStyle=col;q.fillRect(Math.round(x),Math.round(y),1,1)};
+const ph=k/N*Math.PI*2,tp=f=>({x:P+f*Math.sin(tau)*Math.sin(ph),y:P-f*Math.cos(ph),z:Math.sin(ph)*Math.cos(tau)});
+for(let j=1;j<=16;j++){const p2=ph-j*0.085,al=0.75*(1-j/17);px(P+(L+3)*Math.sin(tau)*Math.sin(p2),P-(L+3)*Math.cos(p2),'#d6efff',al);px(P+(L-3)*Math.sin(tau)*Math.sin(p2),P-(L-3)*Math.cos(p2),'#9fd0ff',al*0.7)}
+const T0=tp(L),dx=T0.x-P,dy=T0.y-P,ln=Math.hypot(dx,dy)||1,ux=dx/ln,uy=dy/ln,nx=-uy,ny=ux,near=T0.z>=0;
+const cCore=near?'#f4f8ff':'#8aa0b8',cEdge=near?'#9fb4c8':'#5d7088';
+for(let i=-5;i<0;i++)px(P+ux*i,P+uy*i,i<-4?'#ffb000':'#7a4a22');
+const bl=Math.max(2,Math.round(ln));for(let i=0;i<=bl;i++){const x=P+ux*i,y=P+uy*i;px(x,y,cCore);if(near&&i>1&&i<bl){px(x+nx,y+ny,cEdge);px(x-nx,y-ny,cEdge)}}
+px(P+ux*(bl+1),P+uy*(bl+1),cCore);
+for(let g=-2;g<=2;g++)px(P+ux*1.5+nx*g,P+uy*1.5+ny*g,'#ffd23f');
+px(P,P,'#ffe27a');SWF.push(c)}return SWF}
 function drawStyShield(id,x,y,a0,k,fl){if(k<=0&&!(fl>0))return;const d=STY[id],c=styCanvas(id),e=k*k*(3-2*k),sc=0.45+0.55*e,act=k>=0.34;
-if(id==='sword'){cx.save();cx.translate(x,y);cx.rotate(a0);cx.translate(15*sc,0);cx.scale(sc*1.25,sc*1.25);const al=Math.min(1,Math.max(e,0.25)*(act?1:0.6)+(fl>0?0.25:0)),sp=T*46;
-if(act){cx.globalCompositeOperation='lighter';for(let i=0;i<4;i++){const ra=10+i*3.2,st=sp*(i%2?-0.7:0.9)+i*1.7;cx.strokeStyle='rgba('+(i%2?'190,225,255':'255,255,255')+','+(0.24-i*0.04+(fl>0?0.25:0))+')';cx.lineWidth=i>2?1:2;cx.beginPath();cx.arc(0,0,ra,st,st+1.6+(i%2)*0.7);cx.stroke()}
-cx.fillStyle='rgba(200,230,255,'+(0.09+(fl>0?0.2:0))+')';cx.beginPath();cx.arc(0,0,17,0,6.2832);cx.fill();cx.globalCompositeOperation='source-over'}
-const oi2=cx.imageSmoothingEnabled;cx.imageSmoothingEnabled=true;for(let j=5;j>=0;j--){cx.save();cx.rotate(sp-j*0.3);cx.globalAlpha=al*(j?0.15:1);cx.drawImage(c,-c.lw/2,-c.lh/2,c.lw,c.lh);cx.restore()}cx.imageSmoothingEnabled=oi2;
-if(fl>0){cx.globalCompositeOperation='lighter';cx.fillStyle='rgba(255,255,255,'+Math.min(0.5,fl*2)+')';cx.beginPath();cx.arc(0,0,9,0,6.2832);cx.fill()}
+if(id==='sword'){const F=swordFrames(),N=F.length,fr=T*9*N,al=Math.min(1,Math.max(e,0.25)*(act?1:0.6)+(fl>0?0.25:0));
+const ax=x+Math.cos(a0)*12,ay=y+Math.sin(a0)*12;cx.save();cx.translate(Math.round(ax),Math.round(ay));if(Math.cos(a0)<0)cx.scale(-1,1);const oi3=cx.imageSmoothingEnabled;cx.imageSmoothingEnabled=false;
+for(let j=2;j>=0;j--){const fi=((Math.floor(fr)-j*2)%N+N)%N;cx.globalAlpha=al*(j?0.34/j:1);cx.drawImage(F[fi],-16,-16)}
+cx.imageSmoothingEnabled=oi3;
+if(fl>0){cx.globalAlpha=Math.min(1,fl*3);cx.fillStyle='#ffffff';for(let i=0;i<8;i++){const aa=i*0.785+T*20;cx.fillRect(Math.round(Math.cos(aa)*9),Math.round(Math.sin(aa)*9),2,2)}}
 cx.restore();return}
 cx.save();cx.translate(x,y);let sw=0;if(d.swing&&act)sw=Math.sin(T*16)*0.85;
 if(d.swing&&act){cx.globalCompositeOperation='lighter';cx.strokeStyle='rgba(255,255,255,'+(0.18+(fl>0?0.35:0))+')';cx.lineWidth=2;cx.beginPath();cx.arc(0,0,15,a0+sw-0.9*Math.sign(Math.cos(T*16)||1),a0+sw,Math.cos(T*16)<0);cx.stroke();cx.globalCompositeOperation='source-over'}

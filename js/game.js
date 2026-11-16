@@ -1425,7 +1425,8 @@ for(let g=-2;g<=2;g++)px(P+ux*1.5+nx*g,P+uy*1.5+ny*g,'#ffd23f');
 px(P,P,'#ffe27a');SWF.push(c)}return SWF}
 function drawStyShield(id,x,y,a0,k,fl){if(k<=0&&!(fl>0))return;const d=STY[id],c=styCanvas(id),e=k*k*(3-2*k),sc=0.45+0.55*e,act=k>=0.34;
 if(id==='sword'){const F=swordFrames(),N=F.length,fr=T*9*N,al=Math.min(1,Math.max(e,0.25)*(act?1:0.6)+(fl>0?0.25:0));
-const ax=x+Math.cos(a0)*12,ay=y+Math.sin(a0)*12;cx.save();cx.translate(Math.round(ax),Math.round(ay));if(Math.cos(a0)<0)cx.scale(-1,1);const oi3=cx.imageSmoothingEnabled;cx.imageSmoothingEnabled=false;
+cx.save();cx.translate(x,y);cx.globalCompositeOperation='lighter';cx.lineCap='round';cx.strokeStyle='rgba(150,225,255,'+(0.22*al+(fl>0?0.35:0))+')';cx.lineWidth=5;cx.beginPath();cx.arc(0,0,17,a0-0.95,a0+0.95);cx.stroke();cx.strokeStyle='rgba(255,255,255,'+(0.5*al)+')';cx.lineWidth=1.2;cx.beginPath();cx.arc(0,0,17,a0-0.95,a0+0.95);cx.stroke();cx.restore();
+const ax=x+Math.cos(a0)*13,ay=y+Math.sin(a0)*13;cx.save();cx.translate(Math.round(ax),Math.round(ay));cx.rotate(a0+Math.PI/2);cx.scale(1.55,1.55);const oi3=cx.imageSmoothingEnabled;cx.imageSmoothingEnabled=false;
 for(let j=2;j>=0;j--){const fi=((Math.floor(fr)-j*2)%N+N)%N;cx.globalAlpha=al*(j?0.34/j:1);cx.drawImage(F[fi],-16,-16)}
 cx.imageSmoothingEnabled=oi3;
 if(fl>0){cx.globalAlpha=Math.min(1,fl*3);cx.fillStyle='#ffffff';for(let i=0;i<8;i++){const aa=i*0.785+T*20;cx.fillRect(Math.round(Math.cos(aa)*9),Math.round(Math.sin(aa)*9),2,2)}}

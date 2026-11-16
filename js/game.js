@@ -1060,7 +1060,7 @@ cx.restore();cx.globalAlpha=1}
 // ---- black hole GL post-process ----
 const glc=$('gl');let GL=null,GLT=null,GLTB=null,GLU={},GLOK=false,glOnG=false,BPg=null;
 const warp={on:false,t:0,done:false,fin:0,rects:null,hole:null};
-function bhPar(rf,h){const a=clamp((rf-(ZS[9]-60))/60,0,1),d9=Math.max(0,rf-ZS[9])*BHK,tt=clamp((rf-(ZS[9]-60))/235,0,1),e=tt*tt*tt*(tt*(tt*6-15)+10),hx0=clamp(WW*0.8-cam.x,VW*0.5,VW*0.92);return{a,d9,hx:hx0+(VW*0.5-hx0)*e,hy:VH*(0.48+0.34*(1-e)),rc:0.11*Math.exp(2.55*Math.pow(clamp(d9/315,0,1.15),1.6)),str:Math.pow(clamp(d9/345,0,1),1.3),inc:0.1+1.26*sstep(clamp(d9/320,0,1)),spin:0.15+1.8*Math.pow(clamp(d9/345,0,1),1.5),flow:0.05+0.9*Math.pow(clamp(d9/345,0,1),1.8)}}
+function bhPar(rf,h){const a0=clamp((rf-(ZS[9]-320))/280,0,1),a=a0*a0*(3-2*a0),d9=Math.max(0,rf-ZS[9])*BHK,tt=clamp((rf-(ZS[9]-300))/535,0,1),e=tt*tt*tt*(tt*(tt*6-15)+10),hx0=clamp(WW*0.8-cam.x,VW*0.5,VW*0.92);return{a,d9,hx:hx0+(VW*0.5-hx0)*e,hy:VH*(0.48+0.34*(1-e)),rc:0.11*Math.exp(2.55*Math.pow(clamp(d9/315,0,1.15),1.6)),str:Math.pow(clamp(d9/345,0,1),1.3),inc:0.1+1.26*sstep(clamp(d9/320,0,1)),spin:0.15+1.8*Math.pow(clamp(d9/345,0,1),1.5),flow:0.05+0.9*Math.pow(clamp(d9/345,0,1),1.8)}}
 function glInit(){try{GL=glc.getContext('webgl',{alpha:false,antialias:false,premultipliedAlpha:false});if(!GL)return;
 const mkS=(t,src)=>{const sh=GL.createShader(t);GL.shaderSource(sh,src);GL.compileShader(sh);if(!GL.getShaderParameter(sh,GL.COMPILE_STATUS))throw new Error(GL.getShaderInfoLog(sh));return sh};
 const vs='attribute vec2 a;varying vec2 v;void main(){v=a*0.5+0.5;gl_Position=vec4(a,0.,1.);}';
@@ -1077,7 +1077,7 @@ vec3 bb(float t){vec3 c=mix(vec3(0.30,0.02,0.0),vec3(1.0,0.26,0.03),smoothstep(0
 // Disc technique ported from "webgl-black-hole" by Bruno Simon (MIT) via Scenes3D/black-hole: 3 scrolling periodic-noise layers + differentially rotating particle field
 float pn(vec2 p,vec2 K){vec2 i=floor(p),f=fract(p);f=f*f*f*(f*(f*6.0-15.0)+10.0);vec2 a=mod(i,K),b=mod(i+1.0,K);return mix(mix(h11(a),h11(vec2(b.x,a.y)),f.x),mix(h11(vec2(a.x,b.y)),h11(b),f.x),f.y);}
 float ptl(float R,float a,float M,float N,float thr,float sz){vec2 g=vec2(a*0.15915494*N,R*M);vec2 id=floor(g),f=fract(g);float h=h11(id+3.7);if(h<thr)return 0.0;vec2 off=vec2(h11(id+1.3),h11(id+8.1))*0.6+0.2;vec2 dd=(f-off)*vec2(6.2831853*R/N,1.0/M);float d=length(dd)*M;return smoothstep(sz,sz*0.3,d)*(0.5+0.5*h11(id+5.5));}
-vec3 discAt(float R,float phi,float sx){float y=clamp((R-1.0)/4.2,0.0,1.0);float u=phi*0.15915494;
+vec3 discAt(float R,float phi,float sx){float y=clamp((R-1.0)/7.6,0.0,1.0);float u=phi*0.15915494;
 vec3 cIn=vec3(1.0,0.62,0.16),cOut=vec3(0.95,0.2,0.0);vec3 col=vec3(0.0);
 for(int i=0;i<3;i++){float fi=float(i);float prog=fi*0.5;float inten=smoothstep(0.0,1.0,1.0-((y-prog)*3.0)*0.5);float sp=0.10/(fi*2.2+1.0);
 float uu=u-T*sp+fi*0.37;float nz=0.7*pn(vec2(uu*8.0,y*16.0),vec2(8.0,8.0))+0.3*pn(vec2(uu*16.0+3.0,y*32.0),vec2(16.0,16.0));nz=smoothstep(0.12,0.9,nz);
@@ -1094,13 +1094,13 @@ float f3(vec3 p){float a=0.5,v=0.0;for(int i=0;i<3;i++){v+=a*n3(p);p=p*2.1+vec3(
 float dnz(vec3 pd,float rr,float phx){float an=phx*(0.3+0.55/(rr+0.5));float c=cos(an),s=sin(an);vec2 q=vec2(c*pd.x-s*pd.z,s*pd.x+c*pd.z);return f3(vec3(q*2.2,pd.y*6.0+fp*0.25));}
 vec4 hiMarch(vec2 pi,out vec3 dirO){
 vec3 pos=vec3(pi*2.5,14.0),dir=vec3(0.0,0.0,-1.0);float ci=cos(inc),si=sin(inc);vec3 e1=vec3(1.0,0.0,0.0),nm=vec3(0.0,ci,si),e2=vec3(0.0,si,-ci);
-vec3 em=vec3(0.0);float Tr=1.0,cap=0.0,minR=99.0;const float RIN=1.5,ROUT=6.2;float P=8.0,p1=mod(ph,P),p2=mod(ph+P*0.5,P),w1=sin(3.14159265*p1/P);w1*=w1;
+vec3 em=vec3(0.0);float Tr=1.0,cap=0.0,minR=99.0;const float RIN=1.5,ROUT=10.5;float P=8.0,p1=mod(ph,P),p2=mod(ph+P*0.5,P),w1=sin(3.14159265*p1/P);w1*=w1;
 for(int i=0;i<96;i++){float r=length(pos);minR=min(minR,r);if(r<0.35){cap=1.0;break;}if(r>17.0&&dot(pos,dir)>0.0)break;
 vec3 pd=vec3(dot(pos,e1),dot(pos,nm),dot(pos,e2));float rr=length(pd.xz);
-float ds=clamp(min(0.12*r,abs(pd.y)*0.55+0.04),0.04,0.4);
+float ds=clamp(min(0.12*r,abs(pd.y)*0.55+0.04),0.04,0.5);
 dir=normalize(dir-pos/(r*r*r)*ds);pos+=dir*ds;
 pd=vec3(dot(pos,e1),dot(pos,nm),dot(pos,e2));rr=length(pd.xz);
-float th=0.07+0.045*rr;float vert=exp(-pd.y*pd.y/(th*th));
+float th=0.07+0.05*rr;float vert=exp(-pd.y*pd.y/(th*th));
 float rad=smoothstep(RIN,RIN+0.5,rr)*pow(1.0-smoothstep(RIN,ROUT,rr),1.5);
 if(rad*vert>0.004){float nz=mix(dnz(pd,rr,p2),dnz(pd,rr,p1),w1);float dens=rad*vert*pow(nz*1.55,2.6)*4.0;
 float tm=pow(RIN/max(rr,0.5),1.05)*1.25;vec3 vw=(-pd.z*e1+pd.x*e2)/max(rr,0.01);float bt=min(0.5*sqrt(1.5/max(rr,0.5)),0.55);float dop=1.0/(1.0-bt*dot(vw,-dir));
@@ -1109,7 +1109,7 @@ float a=1.0-exp(-dens*ds*3.2);em+=Tr*a*ec;Tr*=1.0-a;if(Tr<0.01)break;}}
 float ring=exp(-abs(minR-1.09)*38.0)*step(cap,0.5);em+=vec3(1.0,0.82,0.55)*ring*1.5*Tr*(0.8+0.5*dot(dir.xy,vec2(-1.0,0.0)));
 if(cap>0.5)Tr=0.0;dirO=dir;return vec4(em,Tr);}
 void main(){vec2 uv=vec2(v.x,1.0-v.y);vec2 p=(uv-hole)*vec2(asp,1.0);p.y=-p.y;p/=1.0+suck*2.5;float r=length(p)+1e-4;
-float E2=rc*rc*1.1;vec2 q=p*(1.0-E2/(r*r));
+float E2=rc*rc*1.1*amt*amt;vec2 q=p*(1.0-E2/(r*r));
 vec2 su=hole+vec2(q.x/asp,-q.y);vec2 s0=hole+vec2(p.x/asp,-p.y);
 float th=atan(p.y,p.x);float sp2=spin;
 float a2=th+ph*(0.35/(r+0.12));float lr=log(r);
@@ -1118,7 +1118,7 @@ vec3 bgc=mix(vec3(0.035,0.012,0.045),vec3(0.09,0.025,0.04),smoothstep(1.0,0.0,r)
 float rn=r/rc,s=max(sin(inc),0.24);vec2 dq=vec2(p.x/rc,p.y/(rc*s));float R=length(dq)+1e-3;float phi=atan(dq.y,dq.x);
 float nearM=(1.0-smoothstep(-0.12,0.04,p.y/rc))*(1.0-smoothstep(0.3,1.0,inc));
 float aa=max(0.01,1.2*px/rc);float sh=1.0-smoothstep(1.0-aa,1.0,rn);
-float hiIn=hi*(1.0-smoothstep(8.0,9.5,rn));vec4 M=vec4(0.0,0.0,0.0,1.0);if(hiIn>0.001){vec3 dF;M=hiMarch(p/rc,dF);vec2 qq=p+dF.xy/max(-dF.z,0.25)*rc*2.6;su=mix(su,hole+vec2(qq.x/asp,-qq.y),hiIn);}
+float hiIn=hi*amt*(1.0-smoothstep(8.0,9.5,rn));vec4 M=vec4(0.0,0.0,0.0,1.0);if(hiIn>0.001){vec3 dF;M=hiMarch(p/rc,dF);vec2 qq=p+dF.xy/max(-dF.z,0.25)*rc*2.6;su=mix(su,hole+vec2(qq.x/asp,-qq.y),hiIn);}
 vec3 col=bgc*(1.0-sh*amt*(1.0-hiIn));
 vec4 gb=texture2D(texB,su);float inbB=step(0.0,su.x)*step(su.x,1.0)*step(0.0,su.y)*step(su.y,1.0);
 col=mix(col,gb.rgb,gb.a*inbB*mix(mix(1.0,smoothstep(0.97,1.04,rn),amt),1.0,hiIn));
@@ -1160,7 +1160,7 @@ function render(){
 cx.setTransform(RS,0,0,RS,0,0);cx.imageSmoothingEnabled=false;
 const h=-P.y,rf=h/ROW_H,zi=zoneIdx(rf),z=ZONES[zi];
 const u=clamp((rf-ZS[zi])/Math.min(z.rows,300),0,1);
-BPg=rf>=ZS[9]-70?bhPar(rf,h):null;glOnG=!!(GLOK&&BPg&&!(warp.done&&rf-ZS[9]>=345));if(BPg&&warp.on)warp.hole=BPg;
+BPg=rf>=ZS[9]-340?bhPar(rf,h):null;glOnG=!!(GLOK&&BPg&&!(warp.done&&rf-ZS[9]>=345));if(BPg&&warp.on)warp.hole=BPg;
 // camera
 const tx=P.x-VW/2,ty=P.y-VH*0.62;
 const kk=1-Math.pow(0.88,Math.min(0.05,lastDt)*60);cam.x+=(tx-cam.x)*kk;cam.y+=(ty-cam.y)*kk;

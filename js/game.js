@@ -1029,10 +1029,10 @@ varying vec2 v;uniform sampler2D tex,texB;uniform vec2 hole;uniform float asp,rc
 float h11(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float stl(vec2 g,float r,float NA,float NR,float thr,float fl){vec2 id=floor(g),f=fract(g);float h=h11(id);if(h<thr)return 0.0;vec2 off=vec2(h11(id+7.3),h11(id+1.9))*0.6+0.2;vec2 dd=(f-off)*vec2(r*6.2832/NA,r/NR);float d=length(vec2(dd.x/(1.0+fl),dd.y))/px;return smoothstep(1.4,0.15,d)*(0.45+0.55*h11(id+3.3));}
 float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(h11(i),h11(i+vec2(1.0,0.0)),f.x),mix(h11(i+vec2(0.0,1.0)),h11(i+vec2(1.0,1.0)),f.x),f.y);}
-float gasP(vec2 pp,float t){vec2 w=vec2(vn(pp*0.8+vec2(0.0,t*0.05)),vn(pp*0.8+vec2(5.2,1.3)-vec2(t*0.04,0.0)));pp+=1.5*(w-0.5);return 0.5*vn(pp*1.1)+0.32*vn(pp*2.5+3.7)+0.18*vn(pp*5.3+8.1);}
-float gas(float R,float phi,float om){float t1=mod(T,10.0),t2=mod(T+5.0,10.0);float w1=sin(0.314159*t1);w1*=w1;float a1=phi-om*t1,a2=phi-om*t2;float n=w1*gasP(R*vec2(cos(a1),sin(a1)),T)+(1.0-w1)*gasP(R*vec2(cos(a2),sin(a2)),T+17.0);float c=smoothstep(0.26,0.76,n);return clamp(0.05+1.6*c*c+0.45*n,0.03,1.9);}
+float gasP(vec2 pp,float t){vec2 w=vec2(vn(pp*0.6+vec2(0.0,t*0.04)),vn(pp*0.6+vec2(5.2,1.3)-vec2(t*0.03,0.0)));pp+=0.9*(w-0.5);return 0.55*vn(pp*0.9)+0.3*vn(pp*2.0+3.7)+0.15*vn(pp*4.2+8.1);}
+float gas(float R,float phi,float om){float t1=mod(T,14.0),t2=mod(T+7.0,14.0);float w1=sin(0.2243994*t1);w1*=w1;float a1=phi-om*t1,a2=phi-om*t2;float n=w1*gasP(R*vec2(cos(a1),sin(a1)),T)+(1.0-w1)*gasP(R*vec2(cos(a2),sin(a2)),T+17.0);return 0.3+1.2*n;}
 vec3 bb(float t){vec3 c=mix(vec3(0.30,0.02,0.0),vec3(1.0,0.26,0.03),smoothstep(0.0,0.4,t));c=mix(c,vec3(1.0,0.55,0.12),smoothstep(0.35,0.8,t));c=mix(c,vec3(1.0,0.82,0.45),smoothstep(0.75,1.25,t));return mix(c,vec3(1.0,0.95,0.8),smoothstep(1.3,2.0,t));}
-vec3 discAt(float R,float phi,float sx){float om=1.1/(R*sqrt(R));float g=gas(R,phi,om);float Re=R*(1.0+0.45*(g-0.45));float beta=min(0.46/sqrt(max(R,0.3)),0.5);float dl=1.0/(inversesqrt(1.0-beta*beta)*(1.0+beta*sx));float tg=sqrt(max(0.05,1.0-1.0/(2.6*R+0.3)));float temp=pow(1.0/R,0.75)*dl*tg*(0.55+0.55*g);float I=pow(1.0/R,1.9)*pow(dl,2.4)*tg*g*(0.6+0.9*g)*2.6;float edge=smoothstep(1.02,1.3,Re)*(1.0-smoothstep(5.0,9.5,Re));return bb(temp*0.9)*I*edge;}
+vec3 discAt(float R,float phi,float sx){float om=0.9/(R*sqrt(R));float g=gas(R,phi,om);float beta=min(0.46/sqrt(max(R,0.3)),0.5);float dl=1.0/(inversesqrt(1.0-beta*beta)*(1.0+beta*sx));float tg=sqrt(max(0.05,1.0-1.0/(2.6*R+0.3)));float knot=smoothstep(0.85,1.25,g);float temp=pow(1.0/R,0.7)*dl*tg*(0.6+0.5*g);float I=pow(1.0/R,1.5)*pow(dl,2.2)*tg*g*(1.0+0.7*knot)*3.2;float edge=smoothstep(1.02,1.3,R)*(1.0-smoothstep(5.5,10.0,R));return bb(temp*1.0)*I*edge;}
 void main(){vec2 uv=vec2(v.x,1.0-v.y);vec2 p=(uv-hole)*vec2(asp,1.0);p.y=-p.y;p/=1.0+suck*2.5;float r=length(p)+1e-4;
 float E2=rc*rc*1.1;vec2 q=p*(1.0-E2/(r*r));
 vec2 su=hole+vec2(q.x/asp,-q.y);vec2 s0=hole+vec2(p.x/asp,-p.y);
@@ -1040,7 +1040,7 @@ float th=atan(p.y,p.x);float sp2=spin;
 float a2=th+ph*(0.35/(r+0.12));float lr=log(r);
 float st=stl(vec2(a2*14.3,lr*8.0+fp),r,90.0,8.0,0.9,sp2*1.6)+0.7*stl(vec2(a2*9.5+31.0,lr*5.0+fp*0.6+7.0),r,60.0,5.0,0.95,sp2*1.6);
 vec3 bgc=mix(vec3(0.035,0.012,0.045),vec3(0.09,0.025,0.04),smoothstep(1.0,0.0,r))+vec3(1.0,0.86,0.7)*st*2.2*smoothstep(0.0,0.08,r);
-float rn=r/rc,s=max(sin(inc),0.15);vec2 dq=vec2(p.x/rc,p.y/(rc*s));{float R0=length(dq)+1e-3,ph0=atan(dq.y,dq.x);dq.y*=1.0+0.13*sin(ph0*2.0+R0*0.8+T*0.15)+0.08*sin(ph0*3.0-T*0.2+R0*0.4);}float R=length(dq)+1e-3;float phi=atan(dq.y,dq.x);
+float rn=r/rc,s=max(sin(inc),0.24);vec2 dq=vec2(p.x/rc,p.y/(rc*s));{float R0=length(dq)+1e-3,ph0=atan(dq.y,dq.x);dq.y*=1.0+0.13*sin(ph0*2.0+R0*0.8+T*0.15)+0.08*sin(ph0*3.0-T*0.2+R0*0.4);}float R=length(dq)+1e-3;float phi=atan(dq.y,dq.x);
 float nearM=(1.0-smoothstep(-0.12,0.04,p.y/rc))*(1.0-smoothstep(0.3,1.0,inc));
 float aa=max(0.01,1.2*px/rc);float sh=1.0-smoothstep(1.0-aa,1.0,rn);
 vec3 col=bgc*(1.0-sh*amt);

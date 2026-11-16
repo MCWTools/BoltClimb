@@ -26,3 +26,5 @@ Skin Nhân vật và Khiên import trong game được lưu trong IndexedDB củ
 ## Credits
 
 Black hole accretion-disc technique (3 scrolling periodic-noise layers + differentially rotating particle field) adapted from [webgl-black-hole](https://github.com/brunosimon/webgl-black-hole) by Bruno Simon and [Scenes3D/black-hole](https://github.com/Scenes3D/black-hole), both MIT licensed.
+
+High-quality black hole (ray-marched accretion disc, warp-space ray bending, blackbody colour ramp) is ported from the `iterationT` Minecraft shader pack (EndSky.glsl), which in turn credits https://www.shadertoy.com/view/lstSRS. Check those sources' licences before any commercial release.

@@ -1074,7 +1074,7 @@ precision highp float;
 #else
 precision mediump float;
 #endif
-varying vec2 v;uniform sampler2D tex,texB;uniform vec2 hole;uniform float asp,rc,str,suck,fade,T,amt,inc,px,spin,flow,ph,fp,hi;
+varying vec2 v;uniform sampler2D tex,texB,nz;uniform vec2 hole;uniform float asp,rc,str,suck,fade,T,amt,inc,px,spin,flow,ph,fp,hi;
 float h11(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float stl(vec2 g,float r,float NA,float NR,float thr,float fl){vec2 id=floor(g),f=fract(g);float h=h11(id);if(h<thr)return 0.0;vec2 off=vec2(h11(id+7.3),h11(id+1.9))*0.6+0.2;vec2 dd=(f-off)*vec2(r*6.2832/NA,r/NR);float d=length(vec2(dd.x/(1.0+fl),dd.y))/px;return smoothstep(1.4,0.15,d)*(0.45+0.55*h11(id+3.3));}
 float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(h11(i),h11(i+vec2(1.0,0.0)),f.x),mix(h11(i+vec2(0.0,1.0)),h11(i+vec2(1.0,1.0)),f.x),f.y);}
@@ -1093,30 +1093,75 @@ col+=mix(cIn,cOut,y)*dots*0.75;
 float att=max(0.0,min(y/0.02,2.0*(1.0-y)));
 float beta=min(0.46/sqrt(max(R,0.3)),0.5);float dl=1.0/(inversesqrt(1.0-beta*beta)*(1.0+beta*sx));
 return col*att*pow(dl,1.6)*1.05;}
-float h3(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}
-float n3(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(mix(h3(i),h3(i+vec3(1.,0.,0.)),f.x),mix(h3(i+vec3(0.,1.,0.)),h3(i+vec3(1.,1.,0.)),f.x),f.y),mix(mix(h3(i+vec3(0.,0.,1.)),h3(i+vec3(1.,0.,1.)),f.x),mix(h3(i+vec3(0.,1.,1.)),h3(i+vec3(1.,1.,1.)),f.x),f.y),f.z);}
-float f3(vec3 p){float a=0.5,v=0.0;for(int i=0;i<3;i++){v+=a*n3(p);p=p*2.1+vec3(7.3,3.1,5.7);a*=0.5;}return v;}
-float dnz(vec3 pd,float rr,float phx){float an=phx*(0.3+0.55/(rr+0.5));float c=cos(an),s=sin(an);vec2 q=vec2(c*pd.x-s*pd.z,s*pd.x+c*pd.z);return f3(vec3(q*2.2,pd.y*6.0+fp*0.25));}
-vec3 dcol(float t){t=clamp(t,0.0,1.0);vec3 c=mix(vec3(0.20,0.085,0.03),vec3(0.62,0.34,0.12),smoothstep(0.0,0.22,t));c=mix(c,vec3(1.0,0.66,0.26),smoothstep(0.18,0.5,t));c=mix(c,vec3(1.0,0.86,0.55),smoothstep(0.45,0.75,t));return mix(c,vec3(1.0,0.98,0.93),smoothstep(0.72,1.0,t));}
+const float EXPO=3.5;
+// ---- ray-marched accretion disc: logic ported from the "iterationT" shader pack (EndSky.glsl: BlackHole_AccretionDisc_Stars,
+// WarpSpace, Blackbody, pcurve, CalculateCloudFBM), itself based on shadertoy.com/view/lstSRS. See README credits. ----
+const float PI_=3.14159265359,hPI_=1.57079632679;
+float atan2h(vec2 v){return v.x==0.0?(1.0-step(abs(v.y),0.0))*sign(v.y)*hPI_:atan(v.y/v.x)+step(v.x,0.0)*sign(v.y)*PI_;}
+vec3 Blackbody(float temperature){
+const vec4 sx0=vec4(-0.2661293e9,-0.2343589e6,0.8776956e3,0.179910),sx1=vec4(-3.0258469e9,2.1070479e6,0.2226347e3,0.240390);
+const vec4 sy0=vec4(-1.1063814,-1.34811020,2.18555832,-0.20219683),sy1=vec4(-0.9549476,-1.37418593,2.09137015,-0.16748867),sy2=vec4(3.0817580,-5.87338670,3.75112997,-0.37001483);
+float rt=1.0/temperature,rt2=rt*rt;vec4 coeffX=vec4(rt2*rt,rt2,rt,1.0);
+float x=dot(coeffX,temperature<4000.0?sx0:sx1);float x2=x*x;vec4 coeffY=vec4(x2*x,x2,x,1.0);
+float z=1.0/dot(coeffY,temperature<2222.0?sy0:temperature<4000.0?sy1:sy2);
+vec3 xyz=vec3(x*z,1.0,z);xyz.z-=xyz.x+1.0;
+const mat3 xyzToSrgb=mat3(3.24097,-0.96924,0.05563,-1.53738,1.87597,-0.20398,-0.49861,0.04156,1.05697);
+return max(xyzToSrgb*xyz,vec3(0.0));}
+mat3 RotateMatrix(float x,float y,float z){
+mat3 matx=mat3(1.0,0.0,0.0,0.0,cos(x),sin(x),0.0,-sin(x),cos(x));
+mat3 maty=mat3(cos(y),0.0,-sin(y),0.0,1.0,0.0,sin(y),0.0,cos(y));
+mat3 matz=mat3(cos(z),sin(z),0.0,-sin(z),cos(z),0.0,0.0,0.0,1.0);
+return maty*matx*matz;}
+void WarpSpace(inout vec3 eyevec,inout vec3 raypos){
+float singularityDist=distance(raypos,vec3(0.0));float warpFactor=1.0/(singularityDist*singularityDist+0.000001);
+vec3 singularityVector=normalize(-raypos);float warpAmount=0.03;
+eyevec=normalize(eyevec+singularityVector*warpFactor*warpAmount);}
+float Calculate3DNoise(vec3 position){vec3 p=floor(position);vec3 f=fract(position);vec3 b=f*f*(3.0-2.0*f);
+vec2 uv=17.0*p.z+p.xy+b.xy;vec2 rg=texture2D(nz,(uv+0.5)/64.0).zx;return mix(rg.x,rg.y,b.z);}
+float CalculateCloudFBM(vec3 position,vec3 shift){
+const float octAlpha=0.87,octScale=2.5,octShift=(0.87/2.5)/4.0;float accum=0.0,alpha=0.5;
+for(int i=0;i<4;i++){accum+=alpha*Calculate3DNoise(position);position=(position+shift)*octScale;alpha*=octAlpha;}
+return accum+octShift;}
+float pcurve(float x){float x2=x*x;return 12.207*x2*x2*(1.0-x);}
+float IGN(vec2 c){return fract(52.9829189*fract(0.06711056*c.x+0.00583715*c.y));}
 vec4 hiMarch(vec2 pi,out vec3 dirO){
-vec3 pos=vec3(pi*2.5,14.0),dir=vec3(0.0,0.0,-1.0);float ci=cos(inc),si=sin(inc);vec3 e1=vec3(1.0,0.0,0.0),nm=vec3(0.0,ci,si),e2=vec3(0.0,si,-ci);
-vec3 em=vec3(0.0);float Tr=1.0,cap=0.0,minR=99.0;const float RIN=1.45,ROUT=11.0;
-for(int i=0;i<170;i++){float r=length(pos);minR=min(minR,r);if(r<0.35){cap=1.0;break;}if(r>18.0&&dot(pos,dir)>0.0)break;
-float y=dot(pos,nm);vec2 xz=vec2(dot(pos,e1),dot(pos,e2));float rr=length(xz);float th=0.02+0.011*rr;
-float ds=clamp(min(0.1*r,abs(y)*0.5+th*0.35),0.018,0.45);
-dir=normalize(dir-pos/(r*r*r)*ds);pos+=dir*ds;
-y=dot(pos,nm);xz=vec2(dot(pos,e1),dot(pos,e2));rr=length(xz);th=0.02+0.011*rr;
-float vert=exp(-y*y/(th*th));
-if(vert>0.02&&rr>RIN&&rr<ROUT){float sr=RIN/rr,t=pow(sr,0.85);
-float ang=atan(xz.y,xz.x);float rot=ph*(0.45+0.5/(rr+0.6));float swirl=vn(vec2((ang+rot)*3.0,rr*5.0+fp*0.1));
-float bands=0.8+0.2*sin(rr*13.0+1.1*sin(rr*3.0));
-float prof=smoothstep(RIN,RIN+0.15,rr)*(0.35+0.65*(1.0-smoothstep(2.5,ROUT,rr)))*(1.0-smoothstep(ROUT*0.7,ROUT,rr))*bands*(0.88+0.12*swirl);
-float dens=vert*prof*16.0;float al=1.0-exp(-dens*ds);
-vec3 vw=(-xz.y*e1+xz.x*e2)/max(rr,0.01);float bt=min(0.42*sqrt(1.45/rr),0.45);float dop=1.0/(1.0-bt*dot(vw,-dir));
-vec3 ec=dcol(t*(0.8+0.3*dop))*(0.08+5.6*pow(sr,3.0)+0.6*pow(sr,1.4))*pow(dop,2.0)*1.5;
-em+=Tr*al*ec;Tr*=1.0-al;if(Tr<0.01)break;}}
-float ring=exp(-abs(minR-1.09)*70.0)*step(cap,0.5);em+=vec3(1.0,0.98,0.92)*ring*9.0*Tr;
-if(cap>0.5)Tr=0.0;dirO=dir;return vec4(em,Tr);}
+float se=sin(inc),ce=cos(inc);vec3 L=vec3(0.0,-se,ce),rgt=vec3(1.0,0.0,0.0),upv=vec3(0.0,ce,se);
+vec3 rayDir=normalize(L+(rgt*pi.x+upv*pi.y)*(0.74/8.0));
+const float discRadius=2.25,discWidth=3.5,discInner=discRadius-discWidth*0.5;
+float noise=IGN(gl_FragCoord.xy);
+vec3 eye=-L*8.0;vec3 rayPos=eye+rayDir*3.0;mat3 rotation=RotateMatrix(0.1,0.0,-0.35);
+vec3 result=vec3(0.0);float transmittance=1.0,minR=99.0;
+rayPos+=rayDir*0.1*noise;
+for(int i=0;i<100;i++){
+if(transmittance<0.0001)break;
+WarpSpace(rayDir,rayPos);rayPos+=rayDir*0.1;
+vec3 discPos=rotation*rayPos;
+float r=length(discPos);minR=min(minR,r);float p=atan2h(-discPos.zx);float h=discPos.y;
+float radialGradient=1.0-clamp((r-discInner)/discWidth*0.5,0.0,1.0);
+float dist=abs(h);float discThickness=0.1*radialGradient;
+float fr=abs(r-discInner)+0.4;fr=fr*fr;float fade=fr*fr*0.04;
+float bloomFactor=1.0/(h*h*40.0+fade+0.00002);
+bloomFactor*=clamp(2.0-abs(dist)/discThickness,0.0,1.0);bloomFactor=bloomFactor*bloomFactor;
+float dr=pcurve(radialGradient);float density=dr;
+density*=clamp(1.0-abs(dist)/discThickness,0.0,1.0);
+density=clamp(density*0.7,0.0,1.0);density=clamp(density+bloomFactor*0.1,0.0,1.0);
+if(density>0.0001){
+vec3 discCoord=vec3(r,0.0,h*0.1)*3.5;
+float fbm=CalculateCloudFBM(discCoord,T*vec3(0.03,0.05,0.0));
+fbm=fbm*fbm;fbm=fbm*fbm;density*=fbm*dr;
+float gr=1.0-radialGradient;gr=gr*gr;
+float glowStrength=1.0/(gr*gr*400.0+0.002);
+vec3 glow=Blackbody(2700.0+glowStrength*50.0)*glowStrength;
+glow*=sin(p-1.07)*0.75+1.0;
+float stepTransmittance=exp2(-density*3.5);float integral=1.0-stepTransmittance;
+transmittance*=stepTransmittance;result+=integral*transmittance*glow;}
+vec2 tt=vec2(1.0,0.01);float torusDist=length(length(discPos+vec3(0.0,-0.05,0.0))-tt);
+float bloomDisc=1.0/(pow(torusDist,3.5)+0.001);vec3 bcol=Blackbody(12000.0);
+bloomDisc*=step(0.5,r);result+=bcol*bloomDisc*0.05*transmittance;}
+result*=1.0/50.0;
+if(minR<0.2)transmittance=0.0;
+dirO=rayDir;vec3 ex=result*EXPO;return vec4(ex/(1.0+ex),transmittance);}
+
 void main(){vec2 uv=vec2(v.x,1.0-v.y);vec2 p=(uv-hole)*vec2(asp,1.0);p.y=-p.y;p/=1.0+suck*2.5;float r=length(p)+1e-4;
 float E2=rc*rc*1.1*amt*amt;vec2 q=p*(1.0-E2/(r*r));
 vec2 su=hole+vec2(q.x/asp,-q.y);vec2 s0=hole+vec2(p.x/asp,-p.y);
@@ -1127,7 +1172,7 @@ vec3 bgc=mix(vec3(0.035,0.012,0.045),vec3(0.09,0.025,0.04),smoothstep(1.0,0.0,r)
 float rn=r/rc,s=max(sin(inc),0.24);vec2 dq=vec2(p.x/rc,p.y/(rc*s));float R=length(dq)+1e-3;float phi=atan(dq.y,dq.x);
 float nearM=(1.0-smoothstep(-0.12,0.04,p.y/rc))*(1.0-smoothstep(0.3,1.0,inc));
 float aa=max(0.01,1.2*px/rc);float sh=1.0-smoothstep(1.0-aa,1.0,rn);
-float hiIn=hi*amt*(1.0-smoothstep(8.0,9.5,rn));vec4 M=vec4(0.0,0.0,0.0,1.0);if(hiIn>0.001){vec3 dF;M=hiMarch(p/rc,dF);vec2 qq=p+dF.xy/max(-dF.z,0.25)*rc*2.6;su=mix(su,hole+vec2(qq.x/asp,-qq.y),hiIn);}
+float hiIn=hi*amt*(1.0-smoothstep(8.0,9.5,rn));vec4 M=vec4(0.0,0.0,0.0,1.0);if(hiIn>0.001){vec3 dF;M=hiMarch(p/rc,dF);float se2=sin(inc),ce2=cos(inc);vec2 qq=vec2(dF.x,dot(dF,vec3(0.0,ce2,se2)))/max(dot(dF,vec3(0.0,-se2,ce2)),0.25)*(8.0/0.74)*rc;su=mix(su,hole+vec2(qq.x/asp,-qq.y),hiIn);}
 vec3 col=bgc*(1.0-sh*amt*(1.0-hiIn));
 vec4 gb=texture2D(texB,su);float inbB=step(0.0,su.x)*step(su.x,1.0)*step(0.0,su.y)*step(su.y,1.0);
 col=mix(col,gb.rgb,gb.a*inbB*mix(mix(1.0,smoothstep(0.97,1.04,rn),amt),1.0,hiIn));
@@ -1148,8 +1193,10 @@ col*=1.0-fade;
 gl_FragColor=vec4(col,1.0);}`;
 const pg=GL.createProgram();GL.attachShader(pg,mkS(GL.VERTEX_SHADER,vs));GL.attachShader(pg,mkS(GL.FRAGMENT_SHADER,fs));GL.linkProgram(pg);if(!GL.getProgramParameter(pg,GL.LINK_STATUS))throw new Error('link');GL.useProgram(pg);
 const bf=GL.createBuffer();GL.bindBuffer(GL.ARRAY_BUFFER,bf);GL.bufferData(GL.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),GL.STATIC_DRAW);const al=GL.getAttribLocation(pg,'a');GL.enableVertexAttribArray(al);GL.vertexAttribPointer(al,2,GL.FLOAT,false,0,0);
-for(const k of['tex','texB','hole','asp','rc','str','suck','fade','T','amt','inc','px','spin','flow','ph','fp','hi'])GLU[k]=GL.getUniformLocation(pg,k);
+for(const k of['tex','texB','hole','asp','rc','str','suck','fade','T','amt','inc','px','spin','flow','ph','fp','hi','nz'])GLU[k]=GL.getUniformLocation(pg,k);
 GLT=GL.createTexture();GL.bindTexture(GL.TEXTURE_2D,GLT);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_MIN_FILTER,GL.LINEAR);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_MAG_FILTER,GL.LINEAR);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_WRAP_S,GL.CLAMP_TO_EDGE);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_WRAP_T,GL.CLAMP_TO_EDGE);GL.uniform1i(GLU.tex,0);GLTB=GL.createTexture();GL.activeTexture(GL.TEXTURE1);GL.bindTexture(GL.TEXTURE_2D,GLTB);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_MIN_FILTER,GL.LINEAR);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_MAG_FILTER,GL.LINEAR);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_WRAP_S,GL.CLAMP_TO_EDGE);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_WRAP_T,GL.CLAMP_TO_EDGE);GL.uniform1i(GLU.texB,1);GL.activeTexture(GL.TEXTURE0);
+{const NN=64,Bn=new Uint8Array(NN*NN);let sd=1234567;for(let i=0;i<NN*NN;i++){sd=(Math.imul(sd,1664525)+1013904223)>>>0;Bn[i]=sd>>>24}const dn=new Uint8Array(NN*NN*4);for(let y=0;y<NN;y++)for(let x=0;x<NN;x++){const o=(y*NN+x)*4;dn[o]=Bn[((y+17)%NN)*NN+(x+17)%NN];dn[o+1]=0;dn[o+2]=Bn[y*NN+x];dn[o+3]=255}
+const tn=GL.createTexture();GL.activeTexture(GL.TEXTURE2);GL.bindTexture(GL.TEXTURE_2D,tn);GL.texImage2D(GL.TEXTURE_2D,0,GL.RGBA,NN,NN,0,GL.RGBA,GL.UNSIGNED_BYTE,dn);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_MIN_FILTER,GL.LINEAR);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_MAG_FILTER,GL.LINEAR);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_WRAP_S,GL.REPEAT);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_WRAP_T,GL.REPEAT);GL.uniform1i(GLU.nz,2);GL.activeTexture(GL.TEXTURE0)}
 GLOK=true}catch(e){GLOK=false;console.warn('GL off',e)}}
 let bhPh=0,bhFp=0,bhLast=0;
 function glDraw(p,suck,fade){GL.activeTexture(GL.TEXTURE1);GL.bindTexture(GL.TEXTURE_2D,GLTB);GL.texImage2D(GL.TEXTURE_2D,0,GL.RGBA,GL.RGBA,GL.UNSIGNED_BYTE,cvB);GL.activeTexture(GL.TEXTURE0);const now=performance.now(),gdt=Math.min(0.1,Math.max(0,(now-bhLast)/1000));bhLast=now;bhPh+=gdt*p.spin;bhFp+=gdt*p.flow;GL.uniform1f(GLU.ph,bhPh);GL.uniform1f(GLU.fp,bhFp);glc.width!==cv.width&&(glc.width=cv.width);glc.height!==cv.height&&(glc.height=cv.height);glc.style.width=cv.style.width;glc.style.height=cv.style.height;

@@ -302,7 +302,7 @@ function isPortRow(r){return portA(r)||(r>=7&&portA(r-7))}
 function isRepRow(r){return r>0&&r%22==11&&!COOLROWS.has(r)&&zoneIdx(r)<9?true:(r>0&&r%22==11&&zoneIdx(r)>=9)}
 function p9(d){d=Math.max(0,d);return d<120?20*d:d<360?2400+36*(d-120):11040+70*(d-360)}
 function ptsOf(rf){const zi=zoneIdx(rf);if(zi===9)return ZC[9]+p9(rf-ZS[9]);return ZC[zi]+(rf-ZS[zi])/STEP_ROWS*ZW[zi]}
-const bhStage=rf=>{const d=rf-ZS[9];return d<0?0:d<120?1:d<360?2:3};const BHN=['','Chân trời sự kiện','Lốc xoáy cháy','The Forever Darkness'],BHH=['','Gió hút mạnh dần. Đi tiếp','Mảnh cháy bay qua: dùng shield','Bóng tối vĩnh cửu. Trạm đã hỏng hết'];
+const BHK=1.8;const bhStage=rf=>{const d=(rf-ZS[9])*BHK;return d<0?0:d<120?1:d<360?2:3};const BHN=['','Chân trời sự kiện','Lốc xoáy cháy','The Forever Darkness'],BHH=['','Gió hút mạnh dần. Đi tiếp','Mảnh cháy bay qua: dùng shield','Bóng tối vĩnh cửu. Trạm đã hỏng hết'];
 function altOf(hpx){const rf=Math.max(0,hpx/ROW_H),zi=zoneIdx(rf),z=ZONES[zi];const u=clamp((rf-ZS[zi])/(z.rows>1e6?300:z.rows),0,1);if(zi<=2)return z.a0+(z.a1-z.a0)*u;return Math.exp(Math.log(z.a0)+(Math.log(z.a1)-Math.log(z.a0))*u)}
 function fmtAlt(v){const N=n=>n>=100?Math.round(n).toLocaleString('en-US'):n.toFixed(n>=10?1:2);
 if(v<1000)return N(v)+' m';if(v<1e12)return N(v/1000)+' km';if(v<9.4607e15)return N(v/1e12)+' tỷ km';const ly=v/9.4607e15;
@@ -687,7 +687,7 @@ tx=(P.x-cam.x)+(kind==='ember'?(Math.random()-0.5)*90:kind==='fire'?(Math.random
 if(kind==='fire'){sp=135+k*70+Math.random()*30;r=4.5+Math.random()*2.5+k*1.5;warn=1.4}else if(kind==='ember'){sp=65+Math.random()*40;r=2.6;warn=0.5}else{const big=Math.random()<0.55;sp=big?72+Math.random()*14:135+Math.random()*20;r=big?17+Math.random()*7:7+Math.random()*2;warn=1.6}
 const dx=tx-sx,dy=ty-sy,L=Math.hypot(dx,dy)||1;vx=dx/L*sp;vy=dy/L*sp}
 rocks.push({ssx:sx,ssy:sy,x:0,y:0,vx,vy,r,kind,warn,age:0,v:0,big:kind==='star'&&r>12})}
-function bhHaz(dt,rf){const d=rf-ZS[9],k=clamp((d-60)/300,0,1);let nf=0;for(const q of rocks)if(q.kind==='fire')nf++;
+function bhHaz(dt,rf){const d=(rf-ZS[9])*BHK,k=clamp((d-60)/300,0,1);let nf=0;for(const q of rocks)if(q.kind==='fire')nf++;
 fireT-=dt;if(fireT<=0){if(d>=60&&nf<(k>0.5?2:1))spawnBH('fire',k);fireT=(5.2-2.4*k)*(0.8+Math.random()*0.5)}
 if(d>=360){emberT-=dt;if(emberT<=0){spawnBH('ember',1);emberT=2.4+Math.random()*3.2}starT-=dt;if(starT<=0){spawnBH('star',1);starT=9+Math.random()*7}}}
 function hazStep(dt,rf,zi){if(zi===9)bhHaz(dt,rf);if(zi>=2&&zi!==9){astT-=dt;if(astT<=0&&rocks.length<3){spawnAst(zi);astT=([0,0,11,9,7.5,6.5,5.5,5,4.5,4][Math.min(zi,9)]||4)*(0.7+Math.random()*0.8)}}
@@ -707,7 +707,7 @@ T+=dt;
 if(started)timer+=dt;
 const rp=Math.max(0,Math.round(-P.y/ROW_H));
 genUpTo(rp+16);
-{const rp9=rp-ZS[9];if(!warp.done&&rp9>=340&&P.onGround&&!P.carried&&ufo.ph==='idle'&&!P.onLadder){startWarp();return}}
+{const rp9=(rp-ZS[9])*BHK;if(!warp.done&&rp9>=340&&P.onGround&&!P.carried&&ufo.ph==='idle'&&!P.onLadder){startWarp();return}}
 botStep(dt);if(inp.actP&&botAct())inp.actP=false;
 if(ufoStep(dt,rp)){inp.jumpP=false;inp.thrustP=false;inp.actP=false;return}
 const near=nearObjs(rp-3,rp+4);
@@ -765,7 +765,7 @@ if(lock&&wasGround)P.vx*=0.85;
 // env
 const g0=GRAV*gravMul(rf);
 {const wn=wind(rf);windX+=wn*dt;if(!wasGround)P.vx+=wn*dt;else if(!ax)P.x=clamp(P.x+wn*0.1*dt,8,WW-8)}
-if(zi===9){const pull=32+Math.min(140,Math.max(0,rf-ZS[9])*0.45);P.vx+=Math.sign(WW*(0.8-0.3*clamp((rf-ZS[9])/360,0,1))-P.x)*pull*(wasGround?0.55:1)*dt}
+if(zi===9){const pull=32+Math.min(140,Math.max(0,rf-ZS[9])*BHK*0.45);P.vx+=Math.sign(WW*(0.8-0.3*clamp((rf-ZS[9])*BHK/360,0,1))-P.x)*pull*(wasGround?0.55:1)*dt}
 // vertical
 if(shielding){P.vx=0;P.vy=0}
 else if(P.rocketOn){P.peakY=P.y;P.vy=Math.max(P.vy-5000*dt,-290);P.vx=clamp(P.vx+ax*700*dt,-110,110);
@@ -1002,7 +1002,7 @@ cx.restore();cx.globalAlpha=1}
 // ---- black hole GL post-process ----
 const glc=$('gl');let GL=null,GLT=null,GLU={},GLOK=false,glOnG=false,BPg=null;
 const warp={on:false,t:0,done:false,fin:0,rects:null,hole:null};
-function bhPar(rf,h){const hA=(ZS[9]+30)*ROW_H,a=clamp((rf-(ZS[9]-60))/60,0,1),d9=Math.max(0,rf-ZS[9]),ce=clamp(d9/360,0,1),hx0=clamp(WW*0.8-cam.x,VW*0.5,VW*0.92);return{a,d9,hx:hx0+(VW*0.5-hx0)*ce,hy:VH*(0.34+0.14*ce)+clamp((hA-h)*0.05,0,VH),rc:0.052*Math.exp(Math.min(d9,345)/300),str:Math.pow(clamp(d9/345,0,1),1.3),inc:0.28+1.07*sstep(clamp(d9/320,0,1)),spin:0.15+1.8*Math.pow(clamp(d9/345,0,1),1.5),flow:0.05+0.9*Math.pow(clamp(d9/345,0,1),1.8)}}
+function bhPar(rf,h){const hA=(ZS[9]+30)*ROW_H,a=clamp((rf-(ZS[9]-60))/60,0,1),d9=Math.max(0,rf-ZS[9])*BHK,ce=clamp(d9/360,0,1),hx0=clamp(WW*0.8-cam.x,VW*0.5,VW*0.92);return{a,d9,hx:hx0+(VW*0.5-hx0)*ce,hy:VH*(0.34+0.14*ce)+clamp((hA-h)*0.05,0,VH),rc:0.052*Math.exp(Math.min(d9,345)/300),str:Math.pow(clamp(d9/345,0,1),1.3),inc:0.28+1.07*sstep(clamp(d9/320,0,1)),spin:0.15+1.8*Math.pow(clamp(d9/345,0,1),1.5),flow:0.05+0.9*Math.pow(clamp(d9/345,0,1),1.8)}}
 function glInit(){try{GL=glc.getContext('webgl',{alpha:false,antialias:false,premultipliedAlpha:false});if(!GL)return;
 const mkS=(t,src)=>{const sh=GL.createShader(t);GL.shaderSource(sh,src);GL.compileShader(sh);if(!GL.getShaderParameter(sh,GL.COMPILE_STATUS))throw new Error(GL.getShaderInfoLog(sh));return sh};
 const vs='attribute vec2 a;varying vec2 v;void main(){v=a*0.5+0.5;gl_Position=vec4(a,0.,1.);}';
@@ -1011,16 +1011,16 @@ precision highp float;
 #else
 precision mediump float;
 #endif
-varying vec2 v;uniform sampler2D tex;uniform vec2 hole;uniform float asp,rc,str,suck,fade,T,amt,inc,px,spin,flow;
+varying vec2 v;uniform sampler2D tex;uniform vec2 hole;uniform float asp,rc,str,suck,fade,T,amt,inc,px,spin,flow,ph,fp;
 float h11(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float stl(vec2 g,float r,float NA,float NR,float thr,float fl){vec2 id=floor(g),f=fract(g);float h=h11(id);if(h<thr)return 0.0;vec2 off=vec2(h11(id+7.3),h11(id+1.9))*0.6+0.2;vec2 dd=(f-off)*vec2(r*6.2832/NA,r/NR);float d=length(vec2(dd.x/(1.0+fl),dd.y))/px;return smoothstep(1.4,0.15,d)*(0.45+0.55*h11(id+3.3));}
-void main(){vec2 uv=vec2(v.x,1.0-v.y);vec2 p=(uv-hole)*vec2(asp,1.0);p.y=-p.y;float r=length(p)+1e-4;
+void main(){vec2 uv=vec2(v.x,1.0-v.y);vec2 p=(uv-hole)*vec2(asp,1.0);p.y=-p.y;p/=1.0+suck*2.5;float r=length(p)+1e-4;
 vec2 q=p;q*=1.0-0.5*str*exp(-r*2.0);
-float ang=str*1.3*exp(-r*3.0)+suck*suck*7.0*exp(-r*1.2);float cs=cos(ang),sn=sin(ang);q=vec2(cs*q.x-sn*q.y,sn*q.x+cs*q.y);q*=1.0+suck*suck*60.0;
+float ang=str*1.3*exp(-r*3.0);float cs=cos(ang),sn=sin(ang);q=vec2(cs*q.x-sn*q.y,sn*q.x+cs*q.y);
 vec2 su=hole+vec2(q.x/asp,-q.y);
-float th=atan(p.y,p.x);float sp2=spin*(1.0+3.0*suck),fl2=flow*(1.0+4.0*suck);
-float a2=th+T*sp2*(0.35/(r+0.12));float lr=log(r);
-float st=stl(vec2(a2*14.3,lr*8.0+T*fl2),r,90.0,8.0,0.9,sp2*1.6)+0.7*stl(vec2(a2*9.5+31.0,lr*5.0+T*fl2*0.6+7.0),r,60.0,5.0,0.95,sp2*1.6);
+float th=atan(p.y,p.x);float sp2=spin;
+float a2=th+ph*(0.35/(r+0.12));float lr=log(r);
+float st=stl(vec2(a2*14.3,lr*8.0+fp),r,90.0,8.0,0.9,sp2*1.6)+0.7*stl(vec2(a2*9.5+31.0,lr*5.0+fp*0.6+7.0),r,60.0,5.0,0.95,sp2*1.6);
 vec3 bgc=mix(vec3(0.03,0.012,0.05),vec3(0.07,0.025,0.05),smoothstep(1.0,0.0,r))+vec3(1.0,0.92,0.85)*st*2.2*smoothstep(0.0,0.08,r);
 float rn=r/rc,x=p.x/rc,y=p.y/rc;float s=sin(inc);
 vec2 dq=vec2(x,y/s);float R=length(dq)+1e-3;float phi=atan(dq.y,dq.x);
@@ -1046,18 +1046,17 @@ col=1.0-exp(-col*1.9);col=pow(col,vec3(1.12));col*=1.0-fade;
 gl_FragColor=vec4(col,1.0);}`;
 const pg=GL.createProgram();GL.attachShader(pg,mkS(GL.VERTEX_SHADER,vs));GL.attachShader(pg,mkS(GL.FRAGMENT_SHADER,fs));GL.linkProgram(pg);if(!GL.getProgramParameter(pg,GL.LINK_STATUS))throw new Error('link');GL.useProgram(pg);
 const bf=GL.createBuffer();GL.bindBuffer(GL.ARRAY_BUFFER,bf);GL.bufferData(GL.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),GL.STATIC_DRAW);const al=GL.getAttribLocation(pg,'a');GL.enableVertexAttribArray(al);GL.vertexAttribPointer(al,2,GL.FLOAT,false,0,0);
-for(const k of['tex','hole','asp','rc','str','suck','fade','T','amt','inc','px','spin','flow'])GLU[k]=GL.getUniformLocation(pg,k);
+for(const k of['tex','hole','asp','rc','str','suck','fade','T','amt','inc','px','spin','flow','ph','fp'])GLU[k]=GL.getUniformLocation(pg,k);
 GLT=GL.createTexture();GL.bindTexture(GL.TEXTURE_2D,GLT);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_MIN_FILTER,GL.LINEAR);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_MAG_FILTER,GL.LINEAR);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_WRAP_S,GL.CLAMP_TO_EDGE);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_WRAP_T,GL.CLAMP_TO_EDGE);GL.uniform1i(GLU.tex,0);
 GLOK=true}catch(e){GLOK=false;console.warn('GL off',e)}}
-function glDraw(p,suck,fade){glc.width!==cv.width&&(glc.width=cv.width);glc.height!==cv.height&&(glc.height=cv.height);glc.style.width=cv.style.width;glc.style.height=cv.style.height;
+let bhPh=0,bhFp=0,bhLast=0;
+function glDraw(p,suck,fade){const now=performance.now(),gdt=Math.min(0.1,Math.max(0,(now-bhLast)/1000));bhLast=now;bhPh+=gdt*p.spin;bhFp+=gdt*p.flow;GL.uniform1f(GLU.ph,bhPh);GL.uniform1f(GLU.fp,bhFp);glc.width!==cv.width&&(glc.width=cv.width);glc.height!==cv.height&&(glc.height=cv.height);glc.style.width=cv.style.width;glc.style.height=cv.style.height;
 GL.viewport(0,0,glc.width,glc.height);GL.bindTexture(GL.TEXTURE_2D,GLT);GL.texImage2D(GL.TEXTURE_2D,0,GL.RGBA,GL.RGBA,GL.UNSIGNED_BYTE,cv);
 GL.uniform2f(GLU.hole,p.hx/VW,p.hy/VH);GL.uniform1f(GLU.asp,VW/VH);GL.uniform1f(GLU.rc,p.rc);GL.uniform1f(GLU.str,p.str);GL.uniform1f(GLU.suck,suck);GL.uniform1f(GLU.fade,fade);GL.uniform1f(GLU.T,T);GL.uniform1f(GLU.amt,p.a);GL.uniform1f(GLU.inc,p.inc);GL.uniform1f(GLU.px,1/cv.height);GL.uniform1f(GLU.spin,p.spin);GL.uniform1f(GLU.flow,p.flow);GL.drawArrays(GL.TRIANGLE_STRIP,0,4)}
 glInit();
 const WEL=['hud','stat','dpad','fuelw','bthr','bjump','bsh','shw','bufo','bice','prompt','banner','msg'];
 function startWarp(){warp.on=true;warp.t=0;warp.rects=WEL.map(id=>{const e=$(id),r=e.getBoundingClientRect();return{e,x:r.left+r.width/2,y:r.top+r.height/2}});P.vx=P.vy=0;rocks.length=0;splits.length=0;for(const k of Object.keys(inp))if(typeof inp[k]==='number')inp[k]=0;else if(typeof inp[k]==='boolean')inp[k]=false;snd.sfx('portal');shake=Math.max(shake,0.6);say('Bị hút vào hố đen!')}
-function warpStep(dt){T+=dt;warp.t+=dt;const t=warp.t;shake=Math.max(shake,t<3.4?0.08:0);const cr=cv.getBoundingClientRect(),H=warp.hole||{hx:VW*0.5,hy:VH*0.48},hxp=cr.left+H.hx/VW*cr.width,hyp=cr.top+H.hy/VH*cr.height;
-warp.rects.forEach((o,i)=>{const s=clamp((t-0.9-i*0.07)/1.7,0,1),e=Math.pow(s,2.2),dx=(hxp-o.x)*e,dy=(hyp-o.y)*e;o.e.style.translate=dx+'px '+dy+'px';o.e.style.rotate=(e*540)+'deg';o.e.style.scale=String(Math.max(0.02,1-0.98*e));o.e.style.opacity=String(1-Math.max(0,e-0.7)/0.3)});
-if(t>=4.7)finishWarp()}
+function warpStep(dt){T+=dt;warp.t+=dt;const t=warp.t;shake=Math.max(shake,t<2.4?0.05:0);const f=clamp((t-1.8)/0.9,0,1);warp.rects.forEach(o=>{o.e.style.opacity=String(1-f)});if(t>=3.0)finishWarp()}
 function finishWarp(){warp.on=false;warp.done=true;warp.fin=1.3;const rp=Math.round(-P.y/ROW_H),row=Math.max(rp+1,ZS[9]+362);genUpTo(row+24);let m=null;for(let r=row;r<row+8&&!m;r++){const o=W.rows.get(r);if(o)m=o.find(q=>q.main&&!q.drift&&!q.pass&&q.solidNow!==false)}
 if(m){P.x=m.x+m.w/2;P.y=topAt(m,P.x);P.vx=P.vy=0;P.onGround=true;P.ground=m;P.peakY=P.y}
 const B=BOT;if(B.st==='live'){B.x=P.x+14;B.y=P.y;B.vx=B.vy=0;B.onGround=true;B.ground=m;B.plan=null;B.carried=false;B.fly=false}
@@ -1182,7 +1181,7 @@ const pr=$('prompt');
 let bp;const pt=mode!=='play'?null:nearStation?{x:nearStation.x+nearStation.w/2,y:nearStation.y-4,l:nearStation.st=='rep'?'Sửa chữa':'Làm mát'}:nearLadder?{x:nearLadder.px,y:nearLadder.py,l:nearLadder.l}:nearPortal?{x:nearPortal.x+10,y:nearPortal.y-4,l:nearPortal.up?'Dịch chuyển lên':'Dịch chuyển xuống'}:(bp=botPrompt())?{x:BOT.x,y:BOT.y-28,l:bp.l}:null;
 if(pt){const rc=cv.getBoundingClientRect();pr.style.display='flex';pr.style.left=Math.round(rc.left+(pt.x-camX)*scl)+'px';pr.style.top=Math.round(rc.top+(pt.y-camY)*scl)+'px';$('plabel').textContent=nm(tl(pt.l))}else pr.style.display='none';
 if(warp.fin>0){warp.fin=Math.max(0,warp.fin-lastDt);if(!glOnG){cx.setTransform(RS,0,0,RS,0,0);cx.globalAlpha=Math.min(1,warp.fin/0.9);cx.fillStyle='#000';cx.fillRect(0,0,VW,VH);cx.globalAlpha=1}}
-if(glOnG){const sk=warp.on?clamp((warp.t-0.9)/3.0,0,1):0,fd=warp.on?clamp((warp.t-3.5)/1.0,0,1):warp.fin>0?Math.min(1,warp.fin/0.9):0;glDraw(BPg,sk,fd);if(glc.style.display!=='block')glc.style.display='block'}else if(glc.style.display!=='none')glc.style.display='none';
+if(glOnG){const sk=warp.on?clamp(warp.t/2.2,0,1):0,fd=warp.on?clamp((warp.t-1.8)/0.9,0,1):warp.fin>0?Math.min(1,warp.fin/0.9):0;glDraw(BPg,sk,fd);if(glc.style.display!=='block')glc.style.display='block'}else if(glc.style.display!=='none')glc.style.display='none';
 if(!glOnG&&warp.on){cx.setTransform(RS,0,0,RS,0,0);cx.globalAlpha=clamp((warp.t-3.5)/1.0,0,1);cx.fillStyle='#000';cx.fillRect(0,0,VW,VH);cx.globalAlpha=1}
 }
 

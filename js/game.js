@@ -1156,8 +1156,8 @@ glow*=sin(p-1.07)*0.75+1.0;
 float stepTransmittance=exp2(-density*3.5);float integral=1.0-stepTransmittance;
 transmittance*=stepTransmittance;result+=integral*transmittance*glow;}
 vec2 tt=vec2(1.0,0.01);float torusDist=length(length(discPos+vec3(0.0,-0.05,0.0))-tt);
-float bloomDisc=1.0/(pow(torusDist,3.5)+0.001);vec3 bcol=Blackbody(12000.0);
-bloomDisc*=step(0.5,r);result+=bcol*bloomDisc*0.05*transmittance;}
+float bloomDisc=1.0/(pow(torusDist,3.5)+0.001);vec3 bcol=Blackbody(5600.0);
+bloomDisc*=step(0.5,r);result+=bcol*bloomDisc*0.035*transmittance;}
 result*=1.0/50.0;
 if(minR<0.2)transmittance=0.0;
 dirO=rayDir;vec3 ex=result*EXPO;return vec4(ex/(1.0+ex),transmittance);}
@@ -1175,7 +1175,7 @@ float aa=max(0.01,1.2*px/rc);float sh=1.0-smoothstep(1.0-aa,1.0,rn);
 float hiIn=hi*amt*(1.0-smoothstep(8.0,9.5,rn));vec4 M=vec4(0.0,0.0,0.0,1.0);if(hiIn>0.001){vec3 dF;M=hiMarch(p/rc,dF);float se2=sin(inc),ce2=cos(inc);vec2 qq=vec2(dF.x,dot(dF,vec3(0.0,ce2,se2)))/max(dot(dF,vec3(0.0,-se2,ce2)),0.25)*(8.0/0.74)*rc;su=mix(su,hole+vec2(qq.x/asp,-qq.y),hiIn*0.3);}
 vec3 col=bgc*(1.0-sh*amt*(1.0-hiIn));
 vec4 gb=texture2D(texB,su);float inbB=step(0.0,su.x)*step(su.x,1.0)*step(0.0,su.y)*step(su.y,1.0);
-col=mix(col,gb.rgb,gb.a*inbB*mix(mix(1.0,smoothstep(0.97,1.04,rn),amt),1.0,hiIn));
+col=mix(col,gb.rgb*mix(1.0,0.22,hiIn*(1.0-smoothstep(1.0,7.0,rn))),gb.a*inbB*mix(mix(1.0,smoothstep(0.97,1.04,rn),amt),1.0,hiIn));
 col=mix(col,col*M.a+M.rgb*amt,hiIn);
 vec3 dsc=discAt(R,phi,dq.x/R)*mix(1.0-sh,1.0,nearM)*amt*(1.0-hiIn);
 col=col*(1.0-clamp(dot(dsc,vec3(0.45)),0.0,0.92))+dsc;

@@ -720,7 +720,7 @@ T+=dt;
 if(started)timer+=dt;
 const rp=Math.max(0,Math.round(-P.y/ROW_H));
 genUpTo(rp+16);
-{const rp9=(rp-ZS[9])*BHK;if(!warp.done&&rp9>=340&&P.onGround&&!P.carried&&ufo.ph==='idle'&&!P.onLadder){startWarp();return}}
+{const rp9=(rp-ZS[9])*BHK;if(!warp.done&&rp9>=340&&!P.carried&&ufo.ph==='idle'&&!P.onLadder){startWarp();return}}
 botStep(dt);if(inp.actP&&botAct())inp.actP=false;
 if(ufoStep(dt,rp)){inp.jumpP=false;inp.thrustP=false;inp.actP=false;return}
 const near=nearObjs(rp-3,rp+4);
@@ -1015,7 +1015,7 @@ cx.restore();cx.globalAlpha=1}
 // ---- black hole GL post-process ----
 const glc=$('gl');let GL=null,GLT=null,GLTB=null,GLU={},GLOK=false,glOnG=false,BPg=null;
 const warp={on:false,t:0,done:false,fin:0,rects:null,hole:null};
-function bhPar(rf,h){const hA=(ZS[9]+30)*ROW_H,a=clamp((rf-(ZS[9]-60))/60,0,1),d9=Math.max(0,rf-ZS[9])*BHK,ce=clamp(d9/360,0,1),hx0=clamp(WW*0.8-cam.x,VW*0.5,VW*0.92);return{a,d9,hx:hx0+(VW*0.5-hx0)*ce,hy:VH*(0.34+0.14*ce)+clamp((hA-h)*0.05,0,VH),rc:0.11*Math.exp(Math.min(d9,345)/360),str:Math.pow(clamp(d9/345,0,1),1.3),inc:0.1+1.26*sstep(clamp(d9/320,0,1)),spin:0.15+1.8*Math.pow(clamp(d9/345,0,1),1.5),flow:0.05+0.9*Math.pow(clamp(d9/345,0,1),1.8)}}
+function bhPar(rf,h){const hA=(ZS[9]+30)*ROW_H,a=clamp((rf-(ZS[9]-60))/60,0,1),d9=Math.max(0,rf-ZS[9])*BHK,ce=clamp(d9/360,0,1),hx0=clamp(WW*0.8-cam.x,VW*0.5,VW*0.92);return{a,d9,hx:hx0+(VW*0.5-hx0)*ce,hy:VH*(0.34+0.14*ce)+clamp((hA-h)*0.05,0,VH),rc:0.11*Math.exp(2.55*Math.pow(clamp(d9/315,0,1.15),1.6)),str:Math.pow(clamp(d9/345,0,1),1.3),inc:0.1+1.26*sstep(clamp(d9/320,0,1)),spin:0.15+1.8*Math.pow(clamp(d9/345,0,1),1.5),flow:0.05+0.9*Math.pow(clamp(d9/345,0,1),1.8)}}
 function glInit(){try{GL=glc.getContext('webgl',{alpha:false,antialias:false,premultipliedAlpha:false});if(!GL)return;
 const mkS=(t,src)=>{const sh=GL.createShader(t);GL.shaderSource(sh,src);GL.compileShader(sh);if(!GL.getShaderParameter(sh,GL.COMPILE_STATUS))throw new Error(GL.getShaderInfoLog(sh));return sh};
 const vs='attribute vec2 a;varying vec2 v;void main(){v=a*0.5+0.5;gl_Position=vec4(a,0.,1.);}';
@@ -1070,7 +1070,7 @@ GL.uniform2f(GLU.hole,p.hx/VW,p.hy/VH);GL.uniform1f(GLU.asp,VW/VH);GL.uniform1f(
 glInit();
 const WEL=['hud','stat','dpad','fuelw','bthr','bjump','bsh','shw','bufo','bice','prompt','banner','msg'];
 function startWarp(){warp.on=true;warp.t=0;warp.rects=WEL.map(id=>{const e=$(id),r=e.getBoundingClientRect();return{e,x:r.left+r.width/2,y:r.top+r.height/2}});P.vx=P.vy=0;rocks.length=0;splits.length=0;for(const k of Object.keys(inp))if(typeof inp[k]==='number')inp[k]=0;else if(typeof inp[k]==='boolean')inp[k]=false;snd.sfx('portal');shake=Math.max(shake,0.6);say('Bị hút vào hố đen!')}
-function warpStep(dt){T+=dt;warp.t+=dt;const t=warp.t;shake=Math.max(shake,t<2.4?0.05:0);const f=clamp((t-1.8)/0.9,0,1);warp.rects.forEach(o=>{o.e.style.opacity=String(1-f)});if(t>=3.0)finishWarp()}
+function warpStep(dt){T+=dt;warp.t+=dt;const t=warp.t;shake=Math.max(shake,t<2.4?0.05:0);const f=clamp((t-0.9)/0.8,0,1);warp.rects.forEach(o=>{o.e.style.opacity=String(1-f)});if(t>=1.9)finishWarp()}
 function finishWarp(){warp.on=false;warp.done=true;warp.fin=1.3;const rp=Math.round(-P.y/ROW_H),row=Math.max(rp+1,ZS[9]+362);genUpTo(row+24);let m=null;for(let r=row;r<row+8&&!m;r++){const o=W.rows.get(r);if(o)m=o.find(q=>q.main&&!q.drift&&!q.pass&&q.solidNow!==false)}
 if(m){P.x=m.x+m.w/2;P.y=topAt(m,P.x);P.vx=P.vy=0;P.onGround=true;P.ground=m;P.peakY=P.y}
 const B=BOT;if(B.st==='live'){B.x=P.x+14;B.y=P.y;B.vx=B.vy=0;B.onGround=true;B.ground=m;B.plan=null;B.carried=false;B.fly=false}
@@ -1195,7 +1195,7 @@ const pr=$('prompt');
 let bp;const pt=mode!=='play'?null:nearStation?{x:nearStation.x+nearStation.w/2,y:nearStation.y-4,l:nearStation.st=='rep'?'Sửa chữa':'Làm mát'}:nearLadder?{x:nearLadder.px,y:nearLadder.py,l:nearLadder.l}:nearPortal?{x:nearPortal.x+10,y:nearPortal.y-4,l:nearPortal.up?'Dịch chuyển lên':'Dịch chuyển xuống'}:(bp=botPrompt())?{x:BOT.x,y:BOT.y-28,l:bp.l}:null;
 if(pt){const rc=cv.getBoundingClientRect();pr.style.display='flex';pr.style.left=Math.round(rc.left+(pt.x-camX)*scl)+'px';pr.style.top=Math.round(rc.top+(pt.y-camY)*scl)+'px';$('plabel').textContent=nm(tl(pt.l))}else pr.style.display='none';
 if(warp.fin>0){warp.fin=Math.max(0,warp.fin-lastDt);if(!glOnG){cx.setTransform(RS,0,0,RS,0,0);cx.globalAlpha=Math.min(1,warp.fin/0.9);cx.fillStyle='#000';cx.fillRect(0,0,VW,VH);cx.globalAlpha=1}}
-if(glOnG){const sk=warp.on?clamp(warp.t/2.2,0,1):0,fd=warp.on?clamp((warp.t-1.8)/0.9,0,1):warp.fin>0?Math.min(1,warp.fin/0.9):0;glDraw(BPg,sk,fd);if(glc.style.display!=='block')glc.style.display='block'}else if(glc.style.display!=='none')glc.style.display='none';
+if(glOnG){const sk=warp.on?clamp(warp.t/1.6,0,1):0,fd=warp.on?clamp((warp.t-0.9)/0.8,0,1):warp.fin>0?Math.min(1,warp.fin/0.9):0;glDraw(BPg,sk,fd);if(glc.style.display!=='block')glc.style.display='block'}else if(glc.style.display!=='none')glc.style.display='none';
 if(!glOnG&&warp.on){cx.setTransform(RS,0,0,RS,0,0);cx.globalAlpha=clamp((warp.t-3.5)/1.0,0,1);cx.fillStyle='#000';cx.fillRect(0,0,VW,VH);cx.globalAlpha=1}
 }
 

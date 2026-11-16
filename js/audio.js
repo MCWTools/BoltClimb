@@ -56,6 +56,19 @@ if(bs){let bn=N(ch)-12;if(T.bass==='oct'&&(s===6||s===14))bn+=12;if(T.bass==='wa
 if(T.arp&&s%2===1){const a=[0,2,4,2][(s>>1)%4];osc('triangle',mtof(N(ch+a)+12),mtof(N(ch+a)+12),t,sd*1.6,0.06,d)}
 const ix=T.rh.indexOf(s);if(ix>=0){const m=(barCnt%4===3?T.cn2:T.cn)[ix],f=mtof(N(ch+m+7));const o=osc(T.lead,f,f,t,sd*2.2,T.lead==='sawtooth'?0.045:0.08,d,0.01);if(T.lead!=='triangle')osc('triangle',f/2,f/2,t,sd*2,0.04,d)}
 step++;if(step%16===0){barCnt++;if(barCnt>=T.bars){trk=newTrack();step=0;barCnt=0}}}
+// ---- nhạc đua (race mode): nhanh, dồn dập ----
+let raceOn=false,rtrk=null,rInt=0;
+function raceTrack(){const sc=pick([[0,2,3,5,7,8,10],[0,1,3,5,7,8,10],[0,2,3,5,7,9,10]]);const rh=[0,3,6,8,11,14];let c=pick([0,2,4]);const cn=rh.map((_,i)=>{if(i)c=cl(c+pick([-2,-1,1,2,3]),0,6);return c});
+return{bpm:164+Math.floor(R()*14),root:pick([57,59,60,62,64]),sc,prog:pick([[0,5,3,4],[0,3,5,4],[0,0,5,4],[0,4,3,5]]),rh,cn,bars:16}}
+function raceStep(t){const T=rtrk,sd=60/T.bpm/4,s=step%16,ch=T.prog[barCnt%4],N=x=>T.root+T.sc[((x%7)+7)%7]+12*Math.floor(x/7),d=cheer,I=rInt;
+if(s%4===0){drumK(t,d);osc('sine',90,40,t,0.2,0.25,d)}
+if(s===4||s===12){drumS(t,d);nz(t,0.1,0.1,'bandpass',3000,2000,d)}if(s===10&&barCnt%2)drumS(t,d);
+drumH(t,d,s%2?0.05:0.03);if(s%4===2)nz(t,0.08,0.05,'highpass',6500,0,d);
+if(s%2===0){let bn=N(ch)-12;if(s%8===6)bn+=12;osc('sawtooth',mtof(bn),mtof(bn),t,sd*1.7,0.1,d);osc('square',mtof(bn-12),mtof(bn-12),t,sd*1.7,0.09,d)}
+{const a=[0,2,4,7,4,2,0,5][s%8];osc('square',mtof(N(ch+a)+12),mtof(N(ch+a)+12),t,sd*0.9,0.025+0.035*I,d)}
+if(barCnt%4>=2||I>0.5){const ix=T.rh.indexOf(s);if(ix>=0){const f=mtof(N(ch+T.cn[ix]+7));osc('sawtooth',f,f,t,sd*2.3,0.05+0.03*I,d,0.008);osc('square',f*2,f*2,t,sd*1.5,0.02,d)}}
+if(s===15&&barCnt%4===3){for(let k=0;k<4;k++)nz(t+k*sd/4,0.05,0.07,'bandpass',2500,1800,d)}
+step++;if(step%16===0){barCnt++;if(barCnt>=T.bars){rtrk=raceTrack();step=0;barCnt=0}}}
 // ---- ambient không gian ----
 function ambTick(now){if(now<nextAmb)return;const deep=zone>=9?2:zone>=6?1:0;
 const root=pick(deep===2?[26,28,31]:deep===1?[31,33,36]:[33,36,38,40,43]),sc=deep===2?[0,1,5,7,8]:pick([[0,2,7,9,12],[0,3,7,10,14],[0,2,4,7,11],[0,5,7,10,12]]);
@@ -67,8 +80,10 @@ function ramp(p,v,t,tc){try{p.cancelScheduledValues(t)}catch(e){}p.setValueAtTim
 function setZoneMix(first){if(!ac)return;const t=ac.currentTime,c=want==='cheer';ramp(cheer.gain,c?1:0,t,first?0.01:1.3);ramp(amb.gain,c?0:1,t,first?0.01:1.8);
 const deep=zone>=9?2:zone>=6?1:0;if(deep!==curDeep){curDeep=deep;const b=deep===2?mtof(26):deep===1?mtof(31):mtof(33);drone1.frequency.setTargetAtTime(b,t,3);drone2.frequency.setTargetAtTime(b*1.004,t,3);drone3.frequency.setTargetAtTime(b*2.003,t,3)}}
 function tick(){if(!ac||ac.state!=='running')return;const now=ac.currentTime;
-if(cheer.gain.value>0.03||want==='cheer'){if(nextT<now-0.3)nextT=now+0.05;while(nextT<now+0.25){schedStep(nextT);nextT+=60/trk.bpm/4}}else nextT=0;
+if(cheer.gain.value>0.03||want==='cheer'){if(nextT<now-0.3)nextT=now+0.05;while(nextT<now+0.25){if(raceOn){raceStep(nextT);nextT+=60/rtrk.bpm/4}else{schedStep(nextT);nextT+=60/trk.bpm/4}}}else nextT=0;
 if(want==='amb'||amb.gain.value>0.03)ambTick(now);else nextAmb=0}
-function upd(zi,rk,sh){if(!ac)return;const w=zi>=2?'amb':'cheer';if(w!==want||zi!==zone){want=w;zone=zi;setZoneMix(false)}const t=ac.currentTime;rocketG.gain.setTargetAtTime(rk&&cfg.s?0.2:0,t,0.05);shieldG.gain.setTargetAtTime(sh&&cfg.s?0.05:0,t,0.08)}
+function upd(zi,rk,sh){if(!ac)return;const w=(zi>=2&&!raceOn)?'amb':'cheer';if(w!==want||zi!==zone){want=w;zone=zi;setZoneMix(false)}const t=ac.currentTime;rocketG.gain.setTargetAtTime(rk&&cfg.s?0.2:0,t,0.05);shieldG.gain.setTargetAtTime(sh&&cfg.s?0.05:0,t,0.08)}
+function race(on){raceOn=!!on;if(on){rtrk=raceTrack();step=0;barCnt=0;rInt=0;nextT=0}want=on?'cheer':want;if(ac)setZoneMix(false)}
+function raceInt(v){rInt=cl(v,0,1)}
 function set(k,v){cfg[k]=v;save();if(!ac)return;if(k==='m')musBus.gain.setTargetAtTime(v?0.5:0,ac.currentTime,0.1);else{sfxBus.gain.setTargetAtTime(v?0.9:0,ac.currentTime,0.05)}}
-return{cfg,sfx,upd,set,unlock}})();
+return{cfg,sfx,upd,set,unlock,race,raceInt}})();

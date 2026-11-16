@@ -10,7 +10,7 @@
 <div id="wrap"><canvas id="cv"></canvas><canvas id="gl"></canvas></div>
 <div id="hud" class="sh">
  <div id="tl"><div id="best" style="font-size:10px;color:#9aa6bd"></div></div>
- <div id="tc"><div id="alt">0 m</div><div id="timer">00:00.0</div><div id="zn">Thành phố</div></div>
+ <div id="tc"><div id="alt">0 m</div><div id="timer">00:00.0</div><div id="zn">Thành phố</div><div id="rhud" class="hide"><div class="rbar"><i id="ropp"></i><i id="rme"></i></div><div id="rtxt"></div></div></div>
  <div id="tr"><div id="coins">● 0</div><button id="bmenu" aria-label="Menu">☰</button></div>
 </div>
 <div id="stat" class="sh"><div id="parts"></div><div id="heatw"><div id="heat"></div></div><div id="buffs"></div></div>
@@ -28,7 +28,7 @@
 <canvas id="tbg"></canvas>
 <div id="title" class="scr">
  <img id="logo" alt="BOLT CLIMB" src="assets/ui/logo.png">
- <div id="tmain" class="col"><button id="bplay" class="b g big">CHƠI</button><button id="bskin" class="b">Skin</button><button id="blang" class="b n"></button></div>
+ <div id="tmain" class="col"><button id="bplay" class="b g big">CHƠI</button><button id="bskin" class="b">Skin</button><button id="bmp" class="b o">Multiplayer</button><button id="blang" class="b n"></button></div>
  <div id="tpanel" class="col hide">
   <p id="tinfo"></p>
   <button id="bcont" class="b">Tiếp tục</button>
@@ -65,6 +65,7 @@
  <h2>Tạm dừng</h2>
  <p id="menuinfo"></p>
  <button id="bresume" class="b g">Tiếp tục</button>
+ <button id="brleave" class="b r" style="display:none">Rời trận</button>
  <button id="bcopy" class="b n">Copy game state (cho debug Pip)</button>
  <button id="brestart" class="b o">Chơi lại (cùng seed)</button>
  <div class="row"><input id="seedin2" class="in" placeholder="Seed mới" maxlength="24"><button id="bseed" class="b" style="min-width:90px">Đổi</button></div>
@@ -82,11 +83,42 @@
  <button id="bgfx" class="b n"></button>
  <button id="bsetback" class="b g">Quay lại</button>
 </div>
+<div id="mp" class="scr hide">
+ <h2>Multiplayer</h2>
+ <p id="mpmsg"></p>
+ <div id="mpacc" class="col"></div>
+ <div id="mpmodes" class="col hide">
+  <p id="mpwho"></p>
+  <button id="brace" class="b g big">Race Mode</button>
+ </div>
+ <button id="bmpback" class="b n">Quay lại</button>
+</div>
+<div id="mpq" class="scr hide">
+ <h2 id="mpqt">Đang tìm đối thủ...</h2>
+ <div id="vs">
+  <div class="vc l"><div class="vf"><canvas id="cmec" width="64" height="64"></canvas></div><div class="vn" id="cmen"></div></div>
+  <div id="vst">VS</div>
+  <div class="vc r"><div class="vf"><canvas id="coppc" width="64" height="64"></canvas><div id="vq">?</div></div><div class="vn" id="coppn">...</div></div>
+ </div>
+ <p id="mpqs"></p>
+ <button id="bqcancel" class="b n">Hủy</button>
+</div>
+<div id="mpw" class="scr hide rp">
+ <div id="wtitle">WINNER!</div>
+ <div class="vc w"><div class="vf"><canvas id="cwinc" width="64" height="64"></canvas></div><div class="vn" id="cwinn"></div></div>
+ <h2 id="wres"></h2>
+ <p id="wsub"></p>
+ <button id="brematch" class="b g">Đấu lại</button>
+ <button id="bnewm" class="b">Trận mới</button>
+ <button id="bwmenu" class="b n">Về menu</button>
+</div>
+<div id="rcount" class="hide"></div>
 <div id="modal" class="scr hide"></div>
 <div id="con" class="scr hide"><div class="row" style="width:100%;max-width:340px;justify-content:space-between"><h2>Console</h2><button id="cx" class="b r" style="min-width:44px;padding:6px 14px">X</button></div><p>height = 1000 · coin = 1000 · clock = 1 · ufo<br>fixheight (chuyển save cũ sang hệ độ cao mới) · cooling = 10 (số bình 10 giây) · gravity = 0.5 (so với Trái Đất)<br>jump = 3 (mét) · walkspeed = 4 (m/s) · gravity/jump/walkspeed = default<br>repair hand / spring / thruster / leg / all</p><input id="cin" class="in" style="width:300px" placeholder="lệnh..." autocomplete="off" autocapitalize="off"><button id="crun" class="b g">Chạy</button><p id="cout" style="min-height:2em"></p></div>
 
 <script src="js/audio.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/game.js"></script>
+<script src="js/mp.js"></script>
 </body>
 </html>

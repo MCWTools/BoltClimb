@@ -1439,12 +1439,12 @@ function skTab(t){const sh=t==='sh';$('chsec').classList.toggle('hide',sh);$('sh
 $('tabch').onclick=()=>skTab('ch');$('tabsh').onclick=()=>skTab('sh');$('bshimp').onclick=()=>$('shfile').click();$('shfile').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)importShield(f)};
 $('bshtpl').onclick=()=>dlBlob(shieldCanvas(0,8),'bolt-shield-template.png',shMsg,'Template khiên: hình vuông, khiên hướng sang phải, tâm ảnh là tâm nhân vật. Vẽ đè rồi import.');
 $('bplay').onclick=()=>titleView('play');$('bback').onclick=()=>titleView('main');$('bskin').onclick=()=>{skMsg('');skTab('ch');titleView('skin')};$('bskback').onclick=()=>titleView('main');$('btpl').onclick=dlTemplate;$('bimp').onclick=()=>$('skfile').click();$('skfile').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)importSheet(f)};
-$('bnew').onclick=()=>{const v=$('seedin').value.trim();if(v&&!VALID.test(v)){$('seedin').value='';$('seedin').placeholder='Invalid seed';return}startNew(v)};
+$('bnew').onclick=()=>{const v=$('seedin').value.trim();if(v==='_'){$('seedin').value='';dbgToggle();return}if(v&&!VALID.test(v)){$('seedin').value='';$('seedin').placeholder='Invalid seed';return}startNew(v)};
 $('bcont').onclick=()=>{const s=loadSave();if(s){newGame(s.seed,s);mode='play';show(null)}};
 $('bresume').onclick=closeMenu;
 $('bcopy').onclick=()=>{const r=copyState();$('menuinfo').textContent=r.ok?'Đã copy! Dán vào chat cho mình.':'Không copy được — chọn text dưới đây';if(!r.ok){let ta=$('cstate');if(!ta){ta=document.createElement('textarea');ta.id='cstate';ta.style.cssText='width:90%;height:90px;font-size:10px';$('menu').appendChild(ta)}ta.value=r.txt;ta.select()}};
 $('brestart').onclick=()=>{startNew(SEED)};
-$('bseed').onclick=()=>{const v=$('seedin2').value.trim();$('seederr').textContent='';if(v==='_'){openConsole();return}if(!VALID.test(v)){$('seederr').textContent='Invalid seed';return}startNew(v)};
+$('bseed').onclick=()=>{const v=$('seedin2').value.trim();$('seederr').textContent='';if(v==='_'){$('seedin2').value='';dbgToggle();$('seederr').textContent='Debug menu '+(dbg.on?'ON':'OFF');return}if(!VALID.test(v)){$('seederr').textContent='Invalid seed';return}startNew(v)};
 function openConsole(){show('con');$('cout').textContent='';$('cin').value=''}
 $('cx').onclick=()=>show('menu');
 function tpHeight(N){let lo=0,hi=3000,row;if(altOf(0)>=N)row=0;else if(altOf(hi*ROW_H)<N)row=hi;else{while(hi-lo>1){const m=(lo+hi)>>1;if(altOf(m*ROW_H)>=N)hi=m;else lo=m}row=hi}
@@ -1453,7 +1453,7 @@ function tpRow(row){genUpTo(row+14);let best=null;for(let q=row;q<=row+12&&!best
 if(!best)best=W.rows.get(row).find(o=>o.k==='plat');if(!best)return 'Không tìm thấy bệ';
 P.x=best.x+best.w/2;P.y=topAt(best,P.x);P.vx=P.vy=0;P.peakY=P.y;P.onLadder=null;P.rocketOn=false;P.cling=false;parts.length=0;genUpTo(Math.round(-P.y/ROW_H)+16);cam.x=P.x-VW/2;cam.y=P.y-VH*0.62;maxH=Math.max(maxH,-P.y);return 'TP tới '+fmtAlt(altOf(-P.y))}
 function runCmd(t){t=t.trim().toLowerCase();let m;
-if(m=t.match(/^height\s*=\s*([\d.]+)\s*(m|km)?$/))return tpHeight(parseFloat(m[1])*(m[2]==='km'?1000:1));
+if(m=t.match(/^height\s*=\s*([\d.]+(?:e[+-]?\d+)?)\s*(m|km)?$/))return tpHeight(parseFloat(m[1])*(m[2]==='km'?1000:1));
 if(m=t.match(/^coin\s*=\s*(\d+)$/)){P.coins=parseInt(m[1],10);return 'coin = '+P.coins}
 if(m=t.match(/^clock\s*=\s*([\d.]+)$/)){timer=parseFloat(m[1]);return 'clock = '+timer+'s'}
 if(m=t.match(/^repair\s+(hand|arm|spring|thruster|tank|leg|all)$/)){const k=m[1];const map={hand:'arm',arm:'arm',spring:'spring',thruster:'tank',tank:'tank',leg:'leg'};if(k==='all')P.parts={leg:0,spring:0,arm:0,tank:0};else P.parts[map[k]]=0;return 'Đã sửa '+k}
@@ -1467,6 +1467,42 @@ if(t==='fixheight'){if(!legacyPos)return 'Không cần sửa: đang dùng hệ �
 const r=Math.round(-P.y/ROW_H),nr=Math.round(rm(r));maxH=rm(maxH/ROW_H)*ROW_H;legacyPos=false;if(nr===r){save();return 'Vị trí không đổi, đã chuyển sang hệ mới'}const msg=tpRow(nr);save();return msg+' (hàng '+r+' → '+nr+')'}
 if(t==='ufo'){if(ufo.ph==='idle'||ufo.ph==='fly'||ufo.ph==='leave'){startFly();return 'UFO đã xuất hiện, tiếp tục chơi để thấy'}return 'UFO đang bận'}
 return 'Lệnh không hợp lệ'}
+/* ---------- debug menu ---------- */
+const DBGK='bc_dbg',dbg={on:false,min:false,x:12,y:70,vals:{},god:false,inv:false,ap:{}};let dbgEl=null,dbgTick=0;
+try{const o=JSON.parse(localStorage.getItem(DBGK)||'{}');if(o&&typeof o==='object')Object.assign(dbg,o);if(!dbg.vals||typeof dbg.vals!=='object')dbg.vals={};if(!dbg.ap||typeof dbg.ap!=='object')dbg.ap={}}catch(e){}
+function dbgSave(){try{localStorage.setItem(DBGK,JSON.stringify({on:dbg.on,min:dbg.min,x:dbg.x,y:dbg.y,vals:dbg.vals,god:dbg.god,inv:dbg.inv,ap:dbg.ap}))}catch(e){}}
+const DBGF=[['height','Height (m)','vd: 1000, 5km, 4.7e22'],['coin','Coin','số nguyên'],['clock','Clock (s)',''],['cooling','Cooling (bình)',''],['jump','Jump (m)','hoặc default'],['walkspeed','Walk (m/s)','hoặc default'],['gravity','Gravity','Earth=1 / default']];
+function dbgPos(){if(!dbgEl)return;const w=dbgEl.offsetWidth||230,h=dbgEl.offsetHeight||40;dbg.x=Math.max(0,Math.min(innerWidth-Math.min(w,innerWidth),dbg.x));dbg.y=Math.max(0,Math.min(innerHeight-Math.min(h,innerHeight),dbg.y));dbgEl.style.left=dbg.x+'px';dbgEl.style.top=dbg.y+'px'}
+function dbgSync(){if(!dbgEl)return;const set=(id,on)=>{const b=dbgEl.querySelector('#'+id);if(b)b.classList.toggle('on',!!on)};set('dbg-god',godAll);set('dbg-inv',godMode);if(dbg.on&&(dbg.god!==godAll||dbg.inv!==godMode)){dbg.god=godAll;dbg.inv=godMode;dbgSave()}}
+function dbgRun(cmd){const out=dbgEl&&dbgEl.querySelector('#dbg-s');let r;try{r=runCmd(cmd)}catch(e){r='Lỗi: '+e.message}if(out)out.textContent=r;{const mm=cmd.match(/^(jump|walkspeed|gravity|cooling)=(.+)$/);if(mm&&r&&!/không hợp lệ|Lỗi/.test(r)){if(mm[2]==='default')delete dbg.ap[mm[1]];else dbg.ap[mm[1]]=mm[2]}dbgSave()}dbgSync();save();return r}
+function dbgBuild(){
+if(!document.getElementById('dbg-css')){const st=document.createElement('style');st.id='dbg-css';st.textContent='#dbg{position:fixed;z-index:60;width:236px;max-width:calc(100vw - 8px);background:rgba(14,18,32,.95);border:2px solid #7ff0ff;border-radius:10px;font:12px/1.3 system-ui,sans-serif;color:#fff;box-shadow:0 4px 18px rgba(0,0,0,.55);user-select:none;-webkit-user-select:none}#dbg-h{cursor:move;padding:6px 8px;display:flex;justify-content:space-between;align-items:center;background:#16314a;border-radius:8px 8px 0 0;touch-action:none}#dbg-b{padding:8px;display:grid;gap:6px}#dbg button{font:inherit;color:#fff;background:#2a3550;border:1px solid #5d6b8f;border-radius:6px;padding:6px 4px;cursor:pointer}#dbg button.on{background:#1f9d55;border-color:#7ff0a8}#dbg button:active{filter:brightness(1.3)}#dbg .g2{display:grid;grid-template-columns:1fr 1fr;gap:6px}#dbg .rw{display:grid;grid-template-columns:92px 1fr;gap:6px;align-items:center}#dbg input{min-width:0;font:inherit;color:#fff;background:#0b1020;border:1px solid #5d6b8f;border-radius:6px;padding:5px 6px;user-select:text;-webkit-user-select:text}#dbg-s{min-height:1.4em;color:#9fe8ff;word-break:break-word}';document.head.appendChild(st)}
+const d=document.createElement('div');d.id='dbg';
+d.innerHTML='<div id="dbg-h"><b>🛠 Debug</b><button id="dbg-m" style="padding:2px 9px">–</button></div><div id="dbg-b"><div class="g2"><button id="dbg-god">God mode</button><button id="dbg-inv">Invincible</button><button id="dbg-ufo">Spawn UFO</button><button id="dbg-rep">Repair all</button></div>'+DBGF.map(f=>'<div class="rw"><label for="dbg-i-'+f[0]+'">'+f[1]+'</label><input id="dbg-i-'+f[0]+'" data-k="'+f[0]+'" placeholder="'+f[2]+'" autocomplete="off" autocapitalize="off" spellcheck="false"></div>').join('')+'<div id="dbg-s"></div></div>';
+document.body.appendChild(d);dbgEl=d;
+const q=id=>d.querySelector('#'+id);
+q('dbg-god').onclick=()=>dbgRun('godmode='+(godAll?'off':'on'));
+q('dbg-inv').onclick=()=>dbgRun('invincible='+(godMode?'off':'on'));
+q('dbg-ufo').onclick=()=>{if(mode!=='play'){q('dbg-s').textContent='Vào game trước';return}dbgRun('ufo')};
+q('dbg-rep').onclick=()=>dbgRun('repair all');
+d.querySelectorAll('input[data-k]').forEach(inp=>{const k=inp.dataset.k;if(dbg.vals[k]!==undefined)inp.value=dbg.vals[k];
+inp.addEventListener('input',()=>{dbg.vals[k]=inp.value;dbgSave()});
+inp.addEventListener('keydown',e=>{e.stopPropagation();if(e.key!=='Enter')return;e.preventDefault();const v=inp.value.trim().toLowerCase().replace(/\s+/g,'');if(!v)return;if((k==='height'||k==='clock'||k==='coin'||k==='cooling')&&mode!=='play'){q('dbg-s').textContent='Vào game trước';return}dbgRun(k+'='+v)});
+inp.addEventListener('keyup',e=>e.stopPropagation())});
+const h=q('dbg-h');let drag=null;
+h.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;drag={id:e.pointerId,dx:e.clientX-dbg.x,dy:e.clientY-dbg.y};try{h.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault()});
+h.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;dbg.x=e.clientX-drag.dx;dbg.y=e.clientY-drag.dy;dbgPos()});
+const end=e=>{if(!drag||(e&&e.pointerId!==drag.id))return;drag=null;dbgSave()};h.addEventListener('pointerup',end);h.addEventListener('pointercancel',end);
+q('dbg-m').onclick=()=>{dbg.min=!dbg.min;dbgMin();dbgPos();dbgSave()};
+dbgMin()}
+function dbgMin(){if(!dbgEl)return;dbgEl.querySelector('#dbg-b').style.display=dbg.min?'none':'grid';dbgEl.querySelector('#dbg-m').textContent=dbg.min?'□':'–'}
+function dbgApply(){godAll=!!dbg.god;godMode=!!(dbg.inv||dbg.god);for(const k of ['jump','walkspeed','gravity']){if(dbg.ap[k]!==undefined){try{runCmd(k+'='+dbg.ap[k])}catch(e){}}}}
+function dbgSet(on,restore){dbg.on=!!on;if(on){if(restore)dbgApply();if(!dbgEl)dbgBuild();dbgEl.style.display='block';dbgMin();dbgPos();dbgSync();if(!dbgTick)dbgTick=setInterval(dbgSync,500)}
+else{godAll=godMode=false;dbg.god=dbg.inv=false;dbg.ap={};JV=JV0;WS=60;gravOv=null;if(dbgEl)dbgEl.style.display='none';if(dbgTick){clearInterval(dbgTick);dbgTick=0}}
+dbgSave()}
+function dbgToggle(){dbgSet(!dbg.on)}
+addEventListener('resize',dbgPos);
+if(dbg.on)dbgSet(true,true);
 $('crun').onclick=()=>{$('cout').textContent=runCmd($('cin').value);$('cin').value='';save()};
 $('bexit').onclick=()=>{save();toTitle()};
 $('bend').onclick=()=>{if(mode!=='menu')return;openReport('Kết thúc chuyến','Bạn đã dừng chuyến leo.')};

@@ -1035,7 +1035,7 @@ vec3 bb(float t){vec3 c=mix(vec3(0.30,0.02,0.0),vec3(1.0,0.26,0.03),smoothstep(0
 vec3 discAt(float R,float phi,float sx){float om=1.1/(R*sqrt(R));float g=gas(R,phi,om);float Re=R*(1.0+0.45*(g-0.45));float beta=min(0.46/sqrt(max(R,0.3)),0.5);float dl=1.0/(inversesqrt(1.0-beta*beta)*(1.0+beta*sx));float tg=sqrt(max(0.05,1.0-1.0/(2.6*R+0.3)));float temp=pow(1.0/R,0.75)*dl*tg*(0.55+0.55*g);float I=pow(1.0/R,1.9)*pow(dl,2.4)*tg*g*(0.6+0.9*g)*2.6;float edge=smoothstep(1.02,1.3,Re)*(1.0-smoothstep(5.0,9.5,Re));return bb(temp*0.9)*I*edge;}
 void main(){vec2 uv=vec2(v.x,1.0-v.y);vec2 p=(uv-hole)*vec2(asp,1.0);p.y=-p.y;p/=1.0+suck*2.5;float r=length(p)+1e-4;
 float E2=rc*rc*1.1;vec2 q=p*(1.0-E2/(r*r));
-vec2 su=hole+vec2(q.x/asp,-q.y);float bF=min(0.9*rc,0.3),LF=min(2.2*rc,0.7);vec2 pF=p/r*(r+bF*exp(-max(r-rc,0.0)/LF));vec2 s0=hole+vec2(pF.x/asp,-pF.y);s0+=vec2(sin(p.y*80.0+T*7.0),cos(p.x*80.0-T*6.0))*0.0018*exp(-max(r/rc-1.0,0.0)*0.6)*amt;
+vec2 su=hole+vec2(q.x/asp,-q.y);vec2 s0=hole+vec2(p.x/asp,-p.y);
 float th=atan(p.y,p.x);float sp2=spin;
 float a2=th+ph*(0.35/(r+0.12));float lr=log(r);
 float st=stl(vec2(a2*14.3,lr*8.0+fp),r,90.0,8.0,0.9,sp2*1.6)+0.7*stl(vec2(a2*9.5+31.0,lr*5.0+fp*0.6+7.0),r,60.0,5.0,0.95,sp2*1.6);
@@ -1057,7 +1057,7 @@ col+=(vec3(1.0,0.3,0.05)*gl1*0.22+vec3(0.9,0.2,0.03)*gl2*0.07)*amt;
 col*=mix(vec3(1.0),vec3(1.12,0.82,0.62),amt);
 col=1.0-exp(-col*1.9);col=pow(col,vec3(1.1));
 vec4 g=texture2D(tex,s0);float inb=step(0.0,s0.x)*step(s0.x,1.0)*step(0.0,s0.y)*step(s0.y,1.0);
-float kF=exp(-max(rn-1.0,0.0)*0.7)*amt;g.rgb=g.rgb*mix(vec3(1.0),vec3(1.0,0.5,0.32),kF*0.65)*(1.0-0.25*kF);col=mix(col,g.rgb,g.a*inb);
+float kF=exp(-max(rn-1.0,0.0)*0.7)*amt;g.rgb=mix(g.rgb,g.rgb*vec3(1.0,0.74,0.58)+vec3(0.10,0.035,0.0),kF*0.45);col=mix(col,g.rgb,g.a*inb);
 col*=1.0-fade;
 gl_FragColor=vec4(col,1.0);}`;
 const pg=GL.createProgram();GL.attachShader(pg,mkS(GL.VERTEX_SHADER,vs));GL.attachShader(pg,mkS(GL.FRAGMENT_SHADER,fs));GL.linkProgram(pg);if(!GL.getProgramParameter(pg,GL.LINK_STATUS))throw new Error('link');GL.useProgram(pg);

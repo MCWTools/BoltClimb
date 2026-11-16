@@ -757,7 +757,7 @@ function spawnPebbles(){const n=14+Math.floor(Math.random()*7),side=Math.floor(M
 for(let i=0;i<n;i++){const off=(Math.random()-0.5)*56,back=Math.random()*26;
 rocks.push({ssx:bx+(side===2?off:(side===0?-back:back)),ssy:by+(side===2?-back:off),bx,by,x:0,y:0,vx:0,vy:0,r:2.6+Math.random()*1.4,kind:'pebble',warn:1.5+i*0.035,age:0,v:Math.floor(Math.random()*3),quiet:i>0,sp})}
 say('Mưa đá! Giơ khiên hướng về phía đàn đá!');shake=Math.max(shake,0.1)}
-function metHaz(dt){let nf=0,np=0;for(const q of rocks){if(q.kind==='fire')nf++;if(q.kind==='pebble')np++}pebT-=dt;if(pebT<=0){if(!np)spawnPebbles();pebT=13+Math.random()*9}fireT-=dt;if(fireT<=0){if(nf<2)spawnBH('fire',0.9);fireT=3.4*(0.8+Math.random()*0.6)}}
+function metHaz(dt){let nf=0,np=0;for(const q of rocks){if(q.kind==='fire')nf++;if(q.kind==='pebble')np++}fireT-=dt;if(fireT<=0){if(nf<2)spawnBH('fire',0.9);fireT=3.4*(0.8+Math.random()*0.6)}}
 function hazStep(dt,rf,zi){if(zi===9)bhHaz(dt,rf);if(zi===8)metHaz(dt);if(zi>=2&&zi<8){astT-=dt;if(astT<=0&&rocks.length<3){spawnAst(zi);astT=([0,0,11,9,7.5,6.5,5.5,5,4.5,4][Math.min(zi,9)]||4)*(0.7+Math.random()*0.8)}}
 const cy=P.y-PH2/2;const sh=P.shOn&&(P.shK||0)>=0.34;
 for(let i=rocks.length-1;i>=0;i--){const q=rocks[i];if(q.warn>0){q.warn-=dt;if(q.warn<=0){q.x=cam.x+q.ssx;q.y=cam.y+q.ssy;if(q.kind==='pebble'){const ox=cam.x+q.bx,oy=cam.y+q.by,Lp=Math.hypot(P.x-ox,cy-oy)||1;q.vx=(P.x-ox)/Lp*q.sp;q.vy=(cy-oy)/Lp*q.sp}}continue}

@@ -265,7 +265,8 @@ const t7=['spiral','elliptical','group','irregular','ring','elliptical','spiral'
 const t8=['web','quasar','group','spiral','elliptical','web','nebula','group'];r=ZS[8]-12;i=0;while(r<ZS[9]+30){const t=t8[i%t8.length];push(t,r,t==='web'?2.8+R()*1.4:t==='quasar'?2+R()*1.2:t==='group'?2.4+R()*1.4:1.2+R()*1.4,0.07,0.16);r+=16+R()*14;i++}}
 function skySpr(o){if(o.spr)return o.spr;const pal=PAL[o.pal];let c;switch(o.t){case'spiral':c=gSpiral(72,o.sd,pal);break;case'elliptical':c=gElliptical(56,o.sd,pal);break;case'ring':c=gRing(64,o.sd,pal);break;case'irregular':c=gIrregular(52,o.sd,pal);break;case'nebula':c=gNebula(96,72,o.sd,pal);break;case'globular':c=gGlobular(44,o.sd);break;case'quasar':c=gQuasar(48,o.sd,PAL.teal);break;case'web':c=gWeb(120,84,o.sd,PAL[['blue','violet','teal'][o.sd%3]]);break;case'group':c=gGroup(72,o.sd);break;default:c=BODY.mw}o.spr=c;return c}
 let skyGen=0;
-function drawSky(h,rf){if(rf<ZS[6]-70)return;if(!SKY.length)buildSky();skyGen=0;for(const o of SKY){const y=VH*0.6+(h+o.wy)*o.p;const w0=(o.spr?o.spr.width:80)*o.sc;if(y<-w0||y>VH+w0)continue;if(!o.spr){if(skyGen>=1)continue;skyGen++;skySpr(o)}const im=o.spr,w=im.width*o.sc*0.5,hg=im.height*o.sc*0.5;cx.save();cx.globalAlpha=o.a;cx.translate(Math.round(o.x*VW),Math.round(y));if(o.rot)cx.rotate(o.rot);cx.drawImage(im,-w/2,-hg/2,w,hg);cx.restore()}cx.globalAlpha=1}
+function drawSky(h,rf){if(rf<ZS[6]-70)return;if(!SKY.length)buildSky();skyGen=0;for(const o of SKY){const y=VH*0.6+(h+o.wy)*o.p;const w0=(o.spr?o.spr.width:80)*o.sc;if(y<-w0||y>VH+w0)continue;if(!o.spr){if(skyGen>=1)continue;skyGen++;skySpr(o)}const im=o.spr,w=im.width*o.sc*0.5,hg=im.height*o.sc*0.5;if(!o.gl){const gw=Math.max(4,im.width>>3),gh=Math.max(4,im.height>>3),g1=document.createElement('canvas');g1.width=gw;g1.height=gh;const g=g1.getContext('2d');g.imageSmoothingEnabled=true;g.drawImage(im,0,0,gw,gh);o.gl=g1}
+const tw=0.8+0.2*Math.sin(performance.now()*0.0007*(0.6+(o.sd%5)*0.18)+o.sd);cx.save();cx.globalCompositeOperation='lighter';cx.translate(Math.round(o.x*VW),Math.round(y));if(o.rot)cx.rotate(o.rot);cx.imageSmoothingEnabled=true;cx.globalAlpha=Math.min(1,o.a*2.4)*tw;cx.drawImage(o.gl,-w*1.5,-hg*1.5,w*3,hg*3);cx.globalAlpha=Math.min(1,o.a*1.6)*tw;cx.drawImage(o.gl,-w*0.8,-hg*0.8,w*1.6,hg*1.6);cx.imageSmoothingEnabled=false;cx.globalAlpha=Math.min(1,o.a*1.5)*(0.9+0.1*tw);cx.drawImage(im,-w/2,-hg/2,w,hg);cx.restore()}cx.globalAlpha=1}
 const BODY={};
 function buildBodies(){
 BODY.earth=mk(48,48,p=>{for(let y=0;y<48;y++)for(let x=0;x<48;x++){const nx=(x-23.5)/22,ny=(y-23.5)/22,rr=nx*nx+ny*ny;if(rr>1)continue;const z=Math.sqrt(1-rr),lon=Math.atan2(nx,z)+1,lat=Math.asin(ny),l=-0.6*nx-0.5*ny+0.6*z;const v=Math.sin(lon*2+1)*Math.cos(lat*1.5)+0.7*Math.sin(lon*4-lat*2)+0.4*Math.sin(lon*7+lat*5),cl=Math.sin(lon*3+lat*6)*Math.sin(lon*5-lat*4);let col;if(Math.abs(lat)>1.2)col=l>0.1?'#eef2f8':'#9aa6bd';else if(v>0.8)col=l>0.5?'#5cc45a':l>0.2?'#3f9e46':l>-0.1?'#2a7335':'#173d1c';else col=l>0.5?'#2f7be0':l>0.2?'#2563c4':l>-0.1?'#1c4a9a':'#0f2a5a';if(cl>0.55)col=l>0.2?'#ffffff':l>-0.1?'#c9d6e8':'#5a6b88';if(rr>0.86&&l>-0.1)col=cl>0.55?'#ffffff':'#8fd0ff';p.d(x,y,col)}});
@@ -1016,7 +1017,7 @@ cx.restore();cx.globalAlpha=1}
 // ---- black hole GL post-process ----
 const glc=$('gl');let GL=null,GLT=null,GLTB=null,GLU={},GLOK=false,glOnG=false,BPg=null;
 const warp={on:false,t:0,done:false,fin:0,rects:null,hole:null};
-function bhPar(rf,h){const hA=(ZS[9]+30)*ROW_H,a=clamp((rf-(ZS[9]-60))/60,0,1),d9=Math.max(0,rf-ZS[9])*BHK,ce=clamp(d9/360,0,1),hx0=clamp(WW*0.8-cam.x,VW*0.5,VW*0.92);return{a,d9,hx:hx0+(VW*0.5-hx0)*ce,hy:VH*(0.34+0.14*ce)+clamp((hA-h)*0.05,0,VH),rc:0.11*Math.exp(2.55*Math.pow(clamp(d9/315,0,1.15),1.6)),str:Math.pow(clamp(d9/345,0,1),1.3),inc:0.1+1.26*sstep(clamp(d9/320,0,1)),spin:0.15+1.8*Math.pow(clamp(d9/345,0,1),1.5),flow:0.05+0.9*Math.pow(clamp(d9/345,0,1),1.8)}}
+function bhPar(rf,h){const a=clamp((rf-(ZS[9]-60))/60,0,1),d9=Math.max(0,rf-ZS[9])*BHK,tt=clamp((rf-(ZS[9]-60))/235,0,1),e=tt*tt*tt*(tt*(tt*6-15)+10),hx0=clamp(WW*0.8-cam.x,VW*0.5,VW*0.92);return{a,d9,hx:hx0+(VW*0.5-hx0)*e,hy:VH*(0.48+0.34*(1-e)),rc:0.11*Math.exp(2.55*Math.pow(clamp(d9/315,0,1.15),1.6)),str:Math.pow(clamp(d9/345,0,1),1.3),inc:0.1+1.26*sstep(clamp(d9/320,0,1)),spin:0.15+1.8*Math.pow(clamp(d9/345,0,1),1.5),flow:0.05+0.9*Math.pow(clamp(d9/345,0,1),1.8)}}
 function glInit(){try{GL=glc.getContext('webgl',{alpha:false,antialias:false,premultipliedAlpha:false});if(!GL)return;
 const mkS=(t,src)=>{const sh=GL.createShader(t);GL.shaderSource(sh,src);GL.compileShader(sh);if(!GL.getShaderParameter(sh,GL.COMPILE_STATUS))throw new Error(GL.getShaderInfoLog(sh));return sh};
 const vs='attribute vec2 a;varying vec2 v;void main(){v=a*0.5+0.5;gl_Position=vec4(a,0.,1.);}';
@@ -1043,7 +1044,7 @@ float dots=ptl(R,a,22.0,345.0,0.5,0.34)+0.7*ptl(R,a*1.0+1.3,13.0,201.0,0.62,0.4)
 col+=mix(cIn,cOut,y)*dots*0.75;
 float att=max(0.0,min(y/0.02,2.0*(1.0-y)));
 float beta=min(0.46/sqrt(max(R,0.3)),0.5);float dl=1.0/(inversesqrt(1.0-beta*beta)*(1.0+beta*sx));
-return col*att*pow(dl,1.6)*0.62;}
+return col*att*pow(dl,1.6)*1.05;}
 void main(){vec2 uv=vec2(v.x,1.0-v.y);vec2 p=(uv-hole)*vec2(asp,1.0);p.y=-p.y;p/=1.0+suck*2.5;float r=length(p)+1e-4;
 float E2=rc*rc*1.1;vec2 q=p*(1.0-E2/(r*r));
 vec2 su=hole+vec2(q.x/asp,-q.y);vec2 s0=hole+vec2(p.x/asp,-p.y);
@@ -1051,7 +1052,7 @@ float th=atan(p.y,p.x);float sp2=spin;
 float a2=th+ph*(0.35/(r+0.12));float lr=log(r);
 float st=stl(vec2(a2*14.3,lr*8.0+fp),r,90.0,8.0,0.9,sp2*1.6)+0.7*stl(vec2(a2*9.5+31.0,lr*5.0+fp*0.6+7.0),r,60.0,5.0,0.95,sp2*1.6);
 vec3 bgc=mix(vec3(0.035,0.012,0.045),vec3(0.09,0.025,0.04),smoothstep(1.0,0.0,r))+vec3(1.0,0.86,0.7)*st*2.2*smoothstep(0.0,0.08,r);
-float rn=r/rc,s=max(sin(inc),0.24);vec2 dq=vec2(p.x/rc,p.y/(rc*s));{float R0=length(dq)+1e-3,ph0=atan(dq.y,dq.x);dq.y*=1.0+0.13*sin(ph0*2.0+R0*0.8+T*0.15)+0.08*sin(ph0*3.0-T*0.2+R0*0.4);}float R=length(dq)+1e-3;float phi=atan(dq.y,dq.x);
+float rn=r/rc,s=max(sin(inc),0.24);vec2 dq=vec2(p.x/rc,p.y/(rc*s));float R=length(dq)+1e-3;float phi=atan(dq.y,dq.x);
 float nearM=(1.0-smoothstep(-0.12,0.04,p.y/rc))*(1.0-smoothstep(0.3,1.0,inc));
 float aa=max(0.01,1.2*px/rc);float sh=1.0-smoothstep(1.0-aa,1.0,rn);
 vec3 col=bgc*(1.0-sh*amt);
@@ -1061,14 +1062,14 @@ vec3 dsc=discAt(R,phi,dq.x/R)*mix(1.0-sh,1.0,nearM)*amt;
 col=col*(1.0-clamp(dot(dsc,vec3(0.45)),0.0,0.92))+dsc;
 float Rd=1.08+max(rn-1.0,0.0)*3.4;float arcA=exp(-(rn-1.0)*1.5)*smoothstep(0.995,1.03,rn);float sy=abs(sin(th));
 vec3 arc=discAt(Rd,th,cos(th))*arcA*mix(0.5,1.0,pow(sy,0.6))*(th>0.0?1.0:0.75)*2.0*amt;
-col=col*(1.0-clamp(dot(arc,vec3(0.45)),0.0,0.9))+arc;
+col=col*(1.0-clamp(dot(arc,vec3(0.45)),0.0,0.9))+arc;col+=vec3(1.0,0.5,0.14)*exp(-max(R-1.0,0.0)*0.28)*0.32*amt*(1.0-sh);
 float w=max(0.025,1.5*px/rc);col+=vec3(1.0,0.78,0.5)*exp(-pow((rn-1.012)/w,2.0))*(3.2+1.4*(0.5-0.5*cos(th)))*amt;
 float gl1=exp(-(rn-1.0)*0.75)*smoothstep(0.9,1.1,rn),gl2=exp(-(rn-1.0)*0.22)*smoothstep(0.9,1.1,rn);
 col+=(vec3(1.0,0.3,0.05)*gl1*0.22+vec3(0.9,0.2,0.03)*gl2*0.07)*amt;
 col*=mix(vec3(1.0),vec3(1.12,0.82,0.62),amt);
 col=1.0-exp(-col*1.9);col=pow(col,vec3(1.1));
 vec4 g=texture2D(tex,s0);float inb=step(0.0,s0.x)*step(s0.x,1.0)*step(0.0,s0.y)*step(s0.y,1.0);
-float kF=exp(-max(rn-1.0,0.0)*0.7)*amt;g.rgb=mix(g.rgb,g.rgb*vec3(1.0,0.74,0.58)+vec3(0.10,0.035,0.0),kF*0.45);col=mix(col,g.rgb,g.a*inb);
+float kF=exp(-max(R-1.0,0.0)*0.24)*amt;g.rgb=min(g.rgb*(1.0+kF*vec3(1.3,0.8,0.4))+vec3(1.0,0.5,0.16)*kF*0.5,vec3(1.5))*mix(1.0,0.85,kF*0.2);col=mix(col,g.rgb,g.a*inb);
 col*=1.0-fade;
 gl_FragColor=vec4(col,1.0);}`;
 const pg=GL.createProgram();GL.attachShader(pg,mkS(GL.VERTEX_SHADER,vs));GL.attachShader(pg,mkS(GL.FRAGMENT_SHADER,fs));GL.linkProgram(pg);if(!GL.getProgramParameter(pg,GL.LINK_STATUS))throw new Error('link');GL.useProgram(pg);

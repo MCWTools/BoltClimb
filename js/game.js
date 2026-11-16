@@ -8,7 +8,7 @@ const rs=c=>'rgb('+Math.round(c[0])+','+Math.round(c[1])+','+Math.round(c[2])+')
 function hashStr(s){let h=1779033703^s.length;for(let i=0;i<s.length;i++){h=Math.imul(h^s.charCodeAt(i),3432918353);h=h<<13|h>>>19}h=Math.imul(h^h>>>16,2246822507);h=Math.imul(h^h>>>13,3266489909);return(h^h>>>16)>>>0}
 function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 
-const cv=$('cv'),cx=cv.getContext('2d');
+const cv=$('cv');let cx=cv.getContext('2d');const cx0=cx;const cvB=document.createElement('canvas'),cxB=cvB.getContext('2d');
 let VW=200,VH=270,scl=1,RS=1,lastDt=0.016;function snp(v){return Math.round(v*RS)/RS}
 function resize(){const W=innerWidth||360,H=innerHeight||640;VW=160;VH=Math.round(160*H/W);if(VH<270){VH=270;VW=Math.min(480,Math.round(270*W/H))}VH=Math.min(VH,420);const dpr=window.devicePixelRatio||1,sc0=Math.min(W/VW,H/VH);RS=Math.max(1,Math.floor(sc0*dpr));cv.width=VW*RS;cv.height=VH*RS;scl=RS/dpr;cv.style.width=Math.round(VW*scl)+'px';cv.style.height=Math.round(VH*scl)+'px';cx.imageSmoothingEnabled=false}
 
@@ -213,12 +213,12 @@ function fireSpr(r,f){const w=Math.ceil(r*2+8);return S('fire'+r+'_'+f,w,w,p=>{c
 function starSpr(r){const w=(r+8)*2;return S('bhstar'+r,w,w,p=>{const c=w/2;p.c(c,c,r+1,'#c4561a');p.c(c,c,r,'#ff9a3c');p.c(c,c,r-2,'#ffd23f');p.c(c,c,r*0.62,'#fff3b0');p.c(c,c,Math.max(1,r*0.3),'#ffffff');for(let k=0;k<8;k++){const a=k*Math.PI/4,len=k%2?3:7;for(let i=1;i<=len;i++)p.d(Math.round(c+Math.cos(a)*(r+i)),Math.round(c+Math.sin(a)*(r+i)),i>len-2?'#ff9a3c':'#ffd23f')}})}
 const decor=[];
 function decSpr(r,k){const R=Math.round(r*2)/2,w=Math.ceil(R*2)+6;return S('dec'+k+'_'+R,w,w,p=>{const c=Math.round(w/2),Rr=Math.max(1,Math.round(R));p.c(c,c,Rr,['#4a3c3a','#3e3440','#52423a'][k]);p.c(c-Math.round(R*0.2),c-Math.round(R*0.2),Math.max(1,Math.round(R*0.7)),['#6e5a4e','#5a4a60','#7a5e4c'][k]);if(R>5){p.c(c+Math.round(R*0.35),c+Math.round(R*0.2),Math.max(1,Math.round(R*0.18)),'#241c20');p.c(c-Math.round(R*0.4),c+Math.round(R*0.35),Math.max(1,Math.round(R*0.14)),'#241c20')}p.d(c+Math.round(R*0.55),c-Math.round(R*0.4),'#ff9a3c')})}
-function decSpawn(front,first){const big=Math.random()<(front?0.4:0.25),r=front?(big?9+Math.random()*9:3+Math.random()*4):(big?7+Math.random()*8:2+Math.random()*3),sp=(front?22+Math.random()*50:6+Math.random()*18),ag=Math.random()*6.2832;let x,y;if(first){x=Math.random()*VW;y=Math.random()*VH}else{const sd=Math.floor(Math.random()*4);x=sd===0?-r*2:sd===1?VW+r*2:Math.random()*VW;y=sd===2?-r*2:sd===3?VH+r*2:Math.random()*VH}
+function decSpawn(front,first){const big=Math.random()<(front?0.4:0.4),r=front?(big?9+Math.random()*9:3+Math.random()*4):(big?8+Math.random()*14:2+Math.random()*4),sp=(front?22+Math.random()*50:6+Math.random()*18),ag=Math.random()*6.2832;let x,y;if(first){x=Math.random()*VW;y=Math.random()*VH}else{const sd=Math.floor(Math.random()*4);x=sd===0?-r*2:sd===1?VW+r*2:Math.random()*VW;y=sd===2?-r*2:sd===3?VH+r*2:Math.random()*VH}
 const tx=VW*(0.2+Math.random()*0.6)-x,ty=VH*(0.2+Math.random()*0.6)-y,L=Math.hypot(tx,ty)||1;decor.push({x,y,vx:first?Math.cos(ag)*sp:tx/L*sp,vy:first?Math.sin(ag)*sp:ty/L*sp,r,a:Math.random()*6.28,w:(Math.random()-0.5)*(front?1.2:0.6),k:Math.floor(Math.random()*3),f:front})}
 function decorTick(dt,on,dep){if(!on){decor.length=0;return}let nb=0,nf=0;for(const d of decor){d.f?nf++:nb++;d.x+=d.vx*dt;d.y+=d.vy*dt;d.a+=d.w*dt}
 for(let i=decor.length-1;i>=0;i--){const d=decor[i],m=d.r*2+30;if(d.x<-m||d.x>VW+m||d.y<-m||d.y>VH+m){decor.splice(i,1);d.f?nf--:nb--}}
-const wb=Math.round(7+10*dep),wf=Math.round(2+3*dep);let g=0;while(nb<wb&&g++<4){decSpawn(false,decor.length<4);nb++}g=0;while(nf<wf&&g++<4){decSpawn(true,decor.length<4);nf++}}
-function drawMet(front){for(const d of decor){if(d.f!==front)continue;const sp=decSpr(d.r,d.k);cx.save();cx.translate(Math.round(d.x),Math.round(d.y));cx.rotate(d.a);cx.globalAlpha=front?0.95:0.75;cx.drawImage(sp,-sp.width/2,-sp.height/2);cx.restore()}cx.globalAlpha=1}
+const wb=Math.round(10+16*dep),wf=Math.round(2+3*dep);let g=0;while(nb<wb&&g++<4){decSpawn(false,decor.length<4);nb++}g=0;while(nf<wf&&g++<4){decSpawn(true,decor.length<4);nf++}}
+function drawMet(front,c){c=c||cx;for(const d of decor){if(d.f!==front)continue;const sp=decSpr(d.r,d.k);c.save();c.translate(Math.round(d.x),Math.round(d.y));c.rotate(d.a);c.globalAlpha=front?0.95:(c===cx?0.75:1);c.drawImage(sp,-sp.width/2,-sp.height/2);c.restore()}c.globalAlpha=1}
 function drawBH(q,sx,sy){const f=Math.floor(T*12+q.r)%2;const spr=q.kind==='star'?starSpr(Math.round(q.r)):q.kind==='ember'?fireSpr(3,f):fireSpr(Math.round(q.r),f);
 cx.save();cx.globalCompositeOperation='lighter';cx.globalAlpha=0.26;cx.fillStyle=q.kind==='star'?'#ffd23f':'#ff6a1a';cx.beginPath();cx.arc(sx,sy,q.r*2.1,0,6.283);cx.fill();cx.restore();
 cx.drawImage(spr,Math.round(sx-spr.width/2),Math.round(sy-spr.height/2))}
@@ -1013,7 +1013,7 @@ for(let i=0;i<50;i++){const ph=(i*0.61803)%1,sp=0.16+0.1*((i*7)%5)/5,f=(ph+T*sp)
 cx.restore();cx.globalAlpha=1}
 }
 // ---- black hole GL post-process ----
-const glc=$('gl');let GL=null,GLT=null,GLU={},GLOK=false,glOnG=false,BPg=null;
+const glc=$('gl');let GL=null,GLT=null,GLTB=null,GLU={},GLOK=false,glOnG=false,BPg=null;
 const warp={on:false,t:0,done:false,fin:0,rects:null,hole:null};
 function bhPar(rf,h){const hA=(ZS[9]+30)*ROW_H,a=clamp((rf-(ZS[9]-60))/60,0,1),d9=Math.max(0,rf-ZS[9])*BHK,ce=clamp(d9/360,0,1),hx0=clamp(WW*0.8-cam.x,VW*0.5,VW*0.92);return{a,d9,hx:hx0+(VW*0.5-hx0)*ce,hy:VH*(0.34+0.14*ce)+clamp((hA-h)*0.05,0,VH),rc:0.11*Math.exp(Math.min(d9,345)/360),str:Math.pow(clamp(d9/345,0,1),1.3),inc:0.1+1.26*sstep(clamp(d9/320,0,1)),spin:0.15+1.8*Math.pow(clamp(d9/345,0,1),1.5),flow:0.05+0.9*Math.pow(clamp(d9/345,0,1),1.8)}}
 function glInit(){try{GL=glc.getContext('webgl',{alpha:false,antialias:false,premultipliedAlpha:false});if(!GL)return;
@@ -1024,40 +1024,47 @@ precision highp float;
 #else
 precision mediump float;
 #endif
-varying vec2 v;uniform sampler2D tex;uniform vec2 hole;uniform float asp,rc,str,suck,fade,T,amt,inc,px,spin,flow,ph,fp;
+varying vec2 v;uniform sampler2D tex,texB;uniform vec2 hole;uniform float asp,rc,str,suck,fade,T,amt,inc,px,spin,flow,ph,fp;
 float h11(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float stl(vec2 g,float r,float NA,float NR,float thr,float fl){vec2 id=floor(g),f=fract(g);float h=h11(id);if(h<thr)return 0.0;vec2 off=vec2(h11(id+7.3),h11(id+1.9))*0.6+0.2;vec2 dd=(f-off)*vec2(r*6.2832/NA,r/NR);float d=length(vec2(dd.x/(1.0+fl),dd.y))/px;return smoothstep(1.4,0.15,d)*(0.45+0.55*h11(id+3.3));}
 float vnp(vec2 p,float K){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);float x0=mod(i.x,K),x1=mod(i.x+1.0,K);return mix(mix(h11(vec2(x0,i.y)),h11(vec2(x1,i.y)),f.x),mix(h11(vec2(x0,i.y+1.0)),h11(vec2(x1,i.y+1.0)),f.x),f.y);}
 float gas(float R,float a){float k=a*3.8197186;float n1=vnp(vec2(k,R*3.2),24.0);float n2=vnp(vec2(k*2.0+7.0,R*7.0+T*0.3),48.0);float n3=vnp(vec2(k*0.5+3.0,R*1.4),12.0);float w=vnp(vec2(k*0.25+1.0,R*0.8),6.0);return clamp(0.22+0.8*(0.45*n1+0.3*n2+0.35*n3+0.4*(w-0.3)),0.04,1.5);}
-vec3 bb(float t){vec3 c=mix(vec3(0.35,0.04,0.0),vec3(1.0,0.38,0.06),smoothstep(0.0,0.4,t));c=mix(c,vec3(1.0,0.74,0.36),smoothstep(0.35,0.75,t));c=mix(c,vec3(1.0,0.95,0.86),smoothstep(0.7,1.05,t));return mix(c,vec3(0.78,0.88,1.0),smoothstep(1.1,1.7,t));}
-vec3 discAt(float R,float phi,float sx){float om=1.1/(R*sqrt(R));float a=phi-T*om;float g=gas(R,a);float beta=min(0.46/sqrt(max(R,0.3)),0.5);float dl=1.0/(inversesqrt(1.0-beta*beta)*(1.0+beta*sx));float tg=sqrt(max(0.05,1.0-1.0/(2.6*R+0.3)));float temp=pow(1.0/R,0.75)*dl*tg*(0.75+0.45*g);float I=pow(1.0/R,1.9)*pow(dl,2.4)*tg*g*2.3;float edge=smoothstep(1.02,1.35,R)*(1.0-smoothstep(6.5,11.0,R));return bb(temp*1.15)*I*edge;}
+vec3 bb(float t){vec3 c=mix(vec3(0.30,0.02,0.0),vec3(1.0,0.26,0.03),smoothstep(0.0,0.4,t));c=mix(c,vec3(1.0,0.55,0.12),smoothstep(0.35,0.8,t));c=mix(c,vec3(1.0,0.82,0.45),smoothstep(0.75,1.25,t));return mix(c,vec3(1.0,0.95,0.8),smoothstep(1.3,2.0,t));}
+vec3 discAt(float R,float phi,float sx){float om=1.1/(R*sqrt(R));float a=phi-T*om;float g=gas(R,a);float beta=min(0.46/sqrt(max(R,0.3)),0.5);float dl=1.0/(inversesqrt(1.0-beta*beta)*(1.0+beta*sx));float tg=sqrt(max(0.05,1.0-1.0/(2.6*R+0.3)));float temp=pow(1.0/R,0.75)*dl*tg*(0.7+0.4*g);float I=pow(1.0/R,1.9)*pow(dl,2.4)*tg*g*2.6;float edge=smoothstep(1.02,1.35,R)*(1.0-smoothstep(6.5,11.0,R));return bb(temp*0.9)*I*edge;}
 void main(){vec2 uv=vec2(v.x,1.0-v.y);vec2 p=(uv-hole)*vec2(asp,1.0);p.y=-p.y;p/=1.0+suck*2.5;float r=length(p)+1e-4;
 float E2=rc*rc*1.1;vec2 q=p*(1.0-E2/(r*r));
-vec2 su=hole+vec2(q.x/asp,-q.y);
+vec2 su=hole+vec2(q.x/asp,-q.y);vec2 s0=hole+vec2(p.x/asp,-p.y);
 float th=atan(p.y,p.x);float sp2=spin;
 float a2=th+ph*(0.35/(r+0.12));float lr=log(r);
 float st=stl(vec2(a2*14.3,lr*8.0+fp),r,90.0,8.0,0.9,sp2*1.6)+0.7*stl(vec2(a2*9.5+31.0,lr*5.0+fp*0.6+7.0),r,60.0,5.0,0.95,sp2*1.6);
-vec3 bgc=mix(vec3(0.03,0.012,0.05),vec3(0.07,0.025,0.05),smoothstep(1.0,0.0,r))+vec3(1.0,0.92,0.85)*st*2.2*smoothstep(0.0,0.08,r);
+vec3 bgc=mix(vec3(0.035,0.012,0.045),vec3(0.09,0.025,0.04),smoothstep(1.0,0.0,r))+vec3(1.0,0.86,0.7)*st*2.2*smoothstep(0.0,0.08,r);
 float rn=r/rc,s=max(sin(inc),0.15);vec2 dq=vec2(p.x/rc,p.y/(rc*s));float R=length(dq)+1e-3;float phi=atan(dq.y,dq.x);
 float nearM=1.0-smoothstep(-0.02,0.02,p.y/rc);
 float aa=max(0.01,1.2*px/rc);float sh=1.0-smoothstep(1.0-aa,1.0,rn);
 vec3 col=bgc*(1.0-sh*amt);
-col+=discAt(R,phi,dq.x/R)*mix(1.0-sh,1.0,nearM)*amt;
-float Rd=1.35+max(rn-1.0,0.0)*3.4;float arcA=exp(-(rn-1.0)*1.7)*smoothstep(0.995,1.03,rn);float sy=abs(sin(th));
-col+=discAt(Rd,th,cos(th))*arcA*mix(0.5,1.0,pow(sy,0.6))*(th>0.0?1.0:0.7)*1.9*amt;
-float w=max(0.025,1.5*px/rc);col+=vec3(1.0,0.97,0.9)*exp(-pow((rn-1.012)/w,2.0))*(3.5+1.5*(0.5-0.5*cos(th)))*amt;
-col+=vec3(1.0,0.42,0.12)*exp(-(rn-1.0)*1.6)*0.02*step(1.0,rn)*amt;
-vec4 g=texture2D(tex,su);float inb=step(0.0,su.x)*step(su.x,1.0)*step(0.0,su.y)*step(su.y,1.0);
-col=mix(col,g.rgb,g.a*inb*smoothstep(0.97,1.04,rn));
-col=1.0-exp(-col*1.9);col=pow(col,vec3(1.12));col*=1.0-fade;
+vec4 gb=texture2D(texB,su);float inbB=step(0.0,su.x)*step(su.x,1.0)*step(0.0,su.y)*step(su.y,1.0);
+col=mix(col,gb.rgb,gb.a*inbB*mix(1.0,smoothstep(0.97,1.04,rn),amt));
+vec3 dsc=discAt(R,phi,dq.x/R)*mix(1.0-sh,1.0,nearM)*amt;
+col=col*(1.0-clamp(dot(dsc,vec3(0.45)),0.0,0.92))+dsc;
+float Rd=1.35+max(rn-1.0,0.0)*3.4;float arcA=exp(-(rn-1.0)*1.5)*smoothstep(0.995,1.03,rn);float sy=abs(sin(th));
+vec3 arc=discAt(Rd,th,cos(th))*arcA*mix(0.5,1.0,pow(sy,0.6))*(th>0.0?1.0:0.75)*2.0*amt;
+col=col*(1.0-clamp(dot(arc,vec3(0.45)),0.0,0.9))+arc;
+float w=max(0.025,1.5*px/rc);col+=vec3(1.0,0.78,0.5)*exp(-pow((rn-1.012)/w,2.0))*(3.2+1.4*(0.5-0.5*cos(th)))*amt;
+float gl1=exp(-(rn-1.0)*0.75)*smoothstep(0.9,1.1,rn),gl2=exp(-(rn-1.0)*0.22)*smoothstep(0.9,1.1,rn);
+col+=(vec3(1.0,0.3,0.05)*gl1*0.22+vec3(0.9,0.2,0.03)*gl2*0.07)*amt;
+col*=mix(vec3(1.0),vec3(1.12,0.82,0.62),amt);
+col=1.0-exp(-col*1.9);col=pow(col,vec3(1.1));
+vec4 g=texture2D(tex,s0);float inb=step(0.0,s0.x)*step(s0.x,1.0)*step(0.0,s0.y)*step(s0.y,1.0);
+col=mix(col,g.rgb,g.a*inb);
+col*=1.0-fade;
 gl_FragColor=vec4(col,1.0);}`;
 const pg=GL.createProgram();GL.attachShader(pg,mkS(GL.VERTEX_SHADER,vs));GL.attachShader(pg,mkS(GL.FRAGMENT_SHADER,fs));GL.linkProgram(pg);if(!GL.getProgramParameter(pg,GL.LINK_STATUS))throw new Error('link');GL.useProgram(pg);
 const bf=GL.createBuffer();GL.bindBuffer(GL.ARRAY_BUFFER,bf);GL.bufferData(GL.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),GL.STATIC_DRAW);const al=GL.getAttribLocation(pg,'a');GL.enableVertexAttribArray(al);GL.vertexAttribPointer(al,2,GL.FLOAT,false,0,0);
-for(const k of['tex','hole','asp','rc','str','suck','fade','T','amt','inc','px','spin','flow','ph','fp'])GLU[k]=GL.getUniformLocation(pg,k);
-GLT=GL.createTexture();GL.bindTexture(GL.TEXTURE_2D,GLT);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_MIN_FILTER,GL.LINEAR);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_MAG_FILTER,GL.LINEAR);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_WRAP_S,GL.CLAMP_TO_EDGE);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_WRAP_T,GL.CLAMP_TO_EDGE);GL.uniform1i(GLU.tex,0);
+for(const k of['tex','texB','hole','asp','rc','str','suck','fade','T','amt','inc','px','spin','flow','ph','fp'])GLU[k]=GL.getUniformLocation(pg,k);
+GLT=GL.createTexture();GL.bindTexture(GL.TEXTURE_2D,GLT);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_MIN_FILTER,GL.LINEAR);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_MAG_FILTER,GL.LINEAR);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_WRAP_S,GL.CLAMP_TO_EDGE);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_WRAP_T,GL.CLAMP_TO_EDGE);GL.uniform1i(GLU.tex,0);GLTB=GL.createTexture();GL.activeTexture(GL.TEXTURE1);GL.bindTexture(GL.TEXTURE_2D,GLTB);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_MIN_FILTER,GL.LINEAR);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_MAG_FILTER,GL.LINEAR);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_WRAP_S,GL.CLAMP_TO_EDGE);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_WRAP_T,GL.CLAMP_TO_EDGE);GL.uniform1i(GLU.texB,1);GL.activeTexture(GL.TEXTURE0);
 GLOK=true}catch(e){GLOK=false;console.warn('GL off',e)}}
 let bhPh=0,bhFp=0,bhLast=0;
-function glDraw(p,suck,fade){const now=performance.now(),gdt=Math.min(0.1,Math.max(0,(now-bhLast)/1000));bhLast=now;bhPh+=gdt*p.spin;bhFp+=gdt*p.flow;GL.uniform1f(GLU.ph,bhPh);GL.uniform1f(GLU.fp,bhFp);glc.width!==cv.width&&(glc.width=cv.width);glc.height!==cv.height&&(glc.height=cv.height);glc.style.width=cv.style.width;glc.style.height=cv.style.height;
+function glDraw(p,suck,fade){GL.activeTexture(GL.TEXTURE1);GL.bindTexture(GL.TEXTURE_2D,GLTB);GL.texImage2D(GL.TEXTURE_2D,0,GL.RGBA,GL.RGBA,GL.UNSIGNED_BYTE,cvB);GL.activeTexture(GL.TEXTURE0);const now=performance.now(),gdt=Math.min(0.1,Math.max(0,(now-bhLast)/1000));bhLast=now;bhPh+=gdt*p.spin;bhFp+=gdt*p.flow;GL.uniform1f(GLU.ph,bhPh);GL.uniform1f(GLU.fp,bhFp);glc.width!==cv.width&&(glc.width=cv.width);glc.height!==cv.height&&(glc.height=cv.height);glc.style.width=cv.style.width;glc.style.height=cv.style.height;
 GL.viewport(0,0,glc.width,glc.height);GL.bindTexture(GL.TEXTURE_2D,GLT);GL.texImage2D(GL.TEXTURE_2D,0,GL.RGBA,GL.RGBA,GL.UNSIGNED_BYTE,cv);
 GL.uniform2f(GLU.hole,p.hx/VW,p.hy/VH);GL.uniform1f(GLU.asp,VW/VH);GL.uniform1f(GLU.rc,p.rc);GL.uniform1f(GLU.str,p.str);GL.uniform1f(GLU.suck,suck);GL.uniform1f(GLU.fade,fade);GL.uniform1f(GLU.T,T);GL.uniform1f(GLU.amt,p.a);GL.uniform1f(GLU.inc,p.inc);GL.uniform1f(GLU.px,1/cv.height);GL.uniform1f(GLU.spin,p.spin);GL.uniform1f(GLU.flow,p.flow);GL.drawArrays(GL.TRIANGLE_STRIP,0,4)}
 glInit();
@@ -1092,8 +1099,8 @@ if(glOnG){cx.save();cx.setTransform(1,0,0,1,0,0);cx.clearRect(0,0,cv.width,cv.he
 const sa=glOnG?0:clamp((rf-170)/150,0,1)*(zi===9?clamp(1-(rf-ZS[9])/200,0,1):1);
 if(sa>0){cx.globalAlpha=sa;for(const s of stars){const y=(((s.y*VH-h*s.p)%VH)+VH)%VH;cx.fillStyle=s.c;cx.fillRect(Math.floor(s.x*VW),Math.floor(y),1,1)}cx.globalAlpha=1}
 if(sa>0){cx.fillStyle='#ffffff';for(const m of mets){const t=(T+m.ph)%m.per;if(t>1.1)continue;const pr=t/1.1,sy=VH*0.6+(m.wy-(camY+VH*0.6))*0.95;if(sy<-60||sy>VH+60)continue;const sx=m.x0-camX*0.95+m.dir*pr*160,yy=sy+pr*40;for(let k=0;k<=m.len;k+=2){cx.globalAlpha=sa*(1-pr*0.6)*(1-k/m.len);cx.fillRect(Math.round(sx-m.dir*k*1.2),Math.round(yy-k*0.3),2,k?1:2)}}cx.globalAlpha=1}
-drawBodies(h,zi,u);
-decorTick(lastDt,!!(BPg&&BPg.d9>10),clamp((BPg?BPg.d9:0)/345,0,1));drawMet(false);
+if(!glOnG)drawBodies(h,zi,u);
+decorTick(lastDt,!!(BPg&&BPg.d9>10),clamp((BPg?BPg.d9:0)/345,0,1));if(glOnG){cx=cxB;if(cvB.width!==cv.width)cvB.width=cv.width;if(cvB.height!==cv.height)cvB.height=cv.height;cxB.setTransform(1,0,0,1,0,0);cxB.clearRect(0,0,cvB.width,cvB.height);cxB.setTransform(RS,0,0,RS,0,0);cxB.imageSmoothingEnabled=false;drawBodies(h,zi,u);drawMet(false,cxB);cx=cx0}else drawMet(false);
 // city skyline & bg clouds
 if(h<5000){const a=clamp(1-h/5000,0,1);cx.globalAlpha=a*0.9;for(const b of city){const bx=Math.round(b.x-cam.x*0.2),by=Math.round(VH-30+h*0.12-b.h*0+ (cam.y*0));const top=VH+(h*0.12)-b.h-20;cx.fillStyle='#7aa8c8';cx.fillRect(bx,Math.round(top),Math.round(b.w),Math.round(b.h+60));cx.fillStyle='#9cc6e0';for(let wy=0;wy<b.h;wy+=10)for(let wx=3;wx<b.w-3;wx+=7)cx.fillRect(bx+wx,Math.round(top)+wy+4,2,3)}cx.globalAlpha=1}
 {const ca=clamp((330-rf)/60,0,1)*0.5;if(ca>0){const cs=S('bgcl',32,12,p=>cloudDraw(p,'#eaf4ff','#c4dbf0'));cx.globalAlpha=ca;for(const c of bgClouds){const y=VH*0.6+(-c.h-(camY+VH*0.6))*c.p;if(y<-c.s*12||y>VH+10)continue;const x=((c.x-cam.x*0.3+T*c.v+windX*0.05)%1000+1000)%1000-32*c.s;cx.drawImage(cs,Math.round(x),Math.round(y),32*c.s,12*c.s)}cx.globalAlpha=1}}

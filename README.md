@@ -21,3 +21,8 @@ Muốn thay một sprite: sửa file PNG, giữ nguyên tên và kích thước.
 ## Skin do người chơi import
 
 Skin Nhân vật và Khiên import trong game được lưu trong IndexedDB của trình duyệt (dung lượng lớn), tự lùi về localStorage nếu không có IndexedDB. Nếu cả hai đều đầy, game báo "không lưu được".
+
+
+## Credits
+
+Black hole accretion-disc technique (3 scrolling periodic-noise layers + differentially rotating particle field) adapted from [webgl-black-hole](https://github.com/brunosimon/webgl-black-hole) by Bruno Simon and [Scenes3D/black-hole](https://github.com/Scenes3D/black-hole), both MIT licensed.

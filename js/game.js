@@ -1029,13 +1029,21 @@ varying vec2 v;uniform sampler2D tex,texB;uniform vec2 hole;uniform float asp,rc
 float h11(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float stl(vec2 g,float r,float NA,float NR,float thr,float fl){vec2 id=floor(g),f=fract(g);float h=h11(id);if(h<thr)return 0.0;vec2 off=vec2(h11(id+7.3),h11(id+1.9))*0.6+0.2;vec2 dd=(f-off)*vec2(r*6.2832/NA,r/NR);float d=length(vec2(dd.x/(1.0+fl),dd.y))/px;return smoothstep(1.4,0.15,d)*(0.45+0.55*h11(id+3.3));}
 float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(h11(i),h11(i+vec2(1.0,0.0)),f.x),mix(h11(i+vec2(0.0,1.0)),h11(i+vec2(1.0,1.0)),f.x),f.y);}
-float bl(vec2 p){return abs(2.0*vn(p)-1.0);}
-float gasP(vec2 pp,float t){pp+=0.55*vec2(sin(pp.y*1.2+t*0.30)+vn(pp*0.7+vec2(0.0,t*0.05))-0.5,cos(pp.x*1.2-t*0.25)+vn(pp*0.7+vec2(7.7,0.0)-vec2(t*0.04,0.0))-0.5);return 0.55*bl(pp*0.75)+0.3*bl(pp*1.7+3.1)+0.15*bl(pp*3.6+9.3);}
-vec2 rot2(vec2 v,float a){float c=cos(a),s=sin(a);return vec2(c*v.x-s*v.y,s*v.x+c*v.y);}
-float gfield(vec2 pos,float om,float w1,float t1,float t2){return w1*gasP(rot2(pos,-om*t1),T)+(1.0-w1)*gasP(rot2(pos,-om*t2),T+17.0);}
-float gas(float R,float phi,float om){float t1=mod(T,40.0),t2=mod(T+20.0,40.0);float w1=sin(0.0785398*t1);w1*=w1;vec2 pos=R*vec2(cos(phi),sin(phi));float f0=gfield(pos,om,w1,t1,t2);float fx=gfield(pos+vec2(0.07,0.0),om,w1,t1,t2),fy=gfield(pos+vec2(0.0,0.07),om,w1,t1,t2);vec3 nr=normalize(vec3(-(fx-f0)*9.0,-(fy-f0)*9.0,1.0));float lit=clamp(dot(nr,normalize(vec3(-0.5,0.6,0.7))),0.0,1.0);return (0.3+1.25*f0)*(0.4+0.95*lit);}
 vec3 bb(float t){vec3 c=mix(vec3(0.30,0.02,0.0),vec3(1.0,0.26,0.03),smoothstep(0.0,0.4,t));c=mix(c,vec3(1.0,0.55,0.12),smoothstep(0.35,0.8,t));c=mix(c,vec3(1.0,0.82,0.45),smoothstep(0.75,1.25,t));return mix(c,vec3(1.0,0.95,0.8),smoothstep(1.3,2.0,t));}
-vec3 discAt(float R,float phi,float sx){float om=0.12+0.1/R;float g=gas(R,phi,om);float beta=min(0.46/sqrt(max(R,0.3)),0.5);float dl=1.0/(inversesqrt(1.0-beta*beta)*(1.0+beta*sx));float tg=sqrt(max(0.05,1.0-1.0/(2.6*R+0.3)));float knot=smoothstep(0.85,1.25,g);float temp=pow(1.0/R,0.7)*dl*tg*(0.6+0.5*g);float I=pow(1.0/R,1.5)*pow(dl,2.2)*tg*g*(1.0+0.7*knot)*3.2;float edge=smoothstep(1.02,1.3,R)*(1.0-smoothstep(5.5,10.0,R));return bb(temp*1.0)*I*edge;}
+// Disc technique ported from "webgl-black-hole" by Bruno Simon (MIT) via Scenes3D/black-hole: 3 scrolling periodic-noise layers + differentially rotating particle field
+float pn(vec2 p,vec2 K){vec2 i=floor(p),f=fract(p);f=f*f*f*(f*(f*6.0-15.0)+10.0);vec2 a=mod(i,K),b=mod(i+1.0,K);return mix(mix(h11(a),h11(vec2(b.x,a.y)),f.x),mix(h11(vec2(a.x,b.y)),h11(b),f.x),f.y);}
+float ptl(float R,float a,float M,float N,float thr,float sz){vec2 g=vec2(a*0.15915494*N,R*M);vec2 id=floor(g),f=fract(g);float h=h11(id+3.7);if(h<thr)return 0.0;vec2 off=vec2(h11(id+1.3),h11(id+8.1))*0.6+0.2;vec2 dd=(f-off)*vec2(6.2831853*R/N,1.0/M);float d=length(dd)*M;return smoothstep(sz,sz*0.3,d)*(0.5+0.5*h11(id+5.5));}
+vec3 discAt(float R,float phi,float sx){float y=clamp((R-1.0)/4.2,0.0,1.0);float u=phi*0.15915494;
+vec3 cIn=vec3(1.0,0.62,0.16),cOut=vec3(0.95,0.2,0.0);vec3 col=vec3(0.0);
+for(int i=0;i<3;i++){float fi=float(i);float prog=fi*0.5;float inten=smoothstep(0.0,1.0,1.0-((y-prog)*3.0)*0.5);float sp=0.10/(fi*2.2+1.0);
+float uu=u-T*sp+fi*0.37;float nz=0.7*pn(vec2(uu*8.0,y*16.0),vec2(8.0,8.0))+0.3*pn(vec2(uu*16.0+3.0,y*32.0),vec2(16.0,16.0));nz=smoothstep(0.12,0.9,nz);
+col=min(col+mix(cIn,cOut,prog)*nz*inten,vec3(1.0));}
+float om=1.05*(1.0-y)+0.15;float a=phi-T*om;
+float dots=ptl(R,a,22.0,345.0,0.5,0.34)+0.7*ptl(R,a*1.0+1.3,13.0,201.0,0.62,0.4);
+col+=mix(cIn,cOut,y)*dots*0.75;
+float att=max(0.0,min(y/0.02,2.0*(1.0-y)));
+float beta=min(0.46/sqrt(max(R,0.3)),0.5);float dl=1.0/(inversesqrt(1.0-beta*beta)*(1.0+beta*sx));
+return col*att*pow(dl,1.6)*0.62;}
 void main(){vec2 uv=vec2(v.x,1.0-v.y);vec2 p=(uv-hole)*vec2(asp,1.0);p.y=-p.y;p/=1.0+suck*2.5;float r=length(p)+1e-4;
 float E2=rc*rc*1.1;vec2 q=p*(1.0-E2/(r*r));
 vec2 su=hole+vec2(q.x/asp,-q.y);vec2 s0=hole+vec2(p.x/asp,-p.y);
@@ -1051,7 +1059,7 @@ vec4 gb=texture2D(texB,su);float inbB=step(0.0,su.x)*step(su.x,1.0)*step(0.0,su.
 col=mix(col,gb.rgb,gb.a*inbB*mix(1.0,smoothstep(0.97,1.04,rn),amt));
 vec3 dsc=discAt(R,phi,dq.x/R)*mix(1.0-sh,1.0,nearM)*amt;
 col=col*(1.0-clamp(dot(dsc,vec3(0.45)),0.0,0.92))+dsc;
-float Rd=1.35+max(rn-1.0,0.0)*3.4;float arcA=exp(-(rn-1.0)*1.5)*smoothstep(0.995,1.03,rn);float sy=abs(sin(th));
+float Rd=1.08+max(rn-1.0,0.0)*3.4;float arcA=exp(-(rn-1.0)*1.5)*smoothstep(0.995,1.03,rn);float sy=abs(sin(th));
 vec3 arc=discAt(Rd,th,cos(th))*arcA*mix(0.5,1.0,pow(sy,0.6))*(th>0.0?1.0:0.75)*2.0*amt;
 col=col*(1.0-clamp(dot(arc,vec3(0.45)),0.0,0.9))+arc;
 float w=max(0.025,1.5*px/rc);col+=vec3(1.0,0.78,0.5)*exp(-pow((rn-1.012)/w,2.0))*(3.2+1.4*(0.5-0.5*cos(th)))*amt;

@@ -1179,7 +1179,7 @@ float rn=r/rc,s=max(sin(inc),0.24);vec2 dq=vec2(p.x/rc,p.y/(rc*s));float R=lengt
 float nearM=(1.0-smoothstep(-0.12,0.04,p.y/rc))*(1.0-smoothstep(0.3,1.0,inc));
 float aa=max(0.01,1.2*px/rc);float sh=1.0-smoothstep(1.0-aa,1.0,rn);
 float hiIn=hi*amt;vec4 M=vec4(0.0,0.0,0.0,1.0);if(hiIn>0.001&&rn<10.0){vec3 dF;M=hiMarch(p/rc,dF);float se2=sin(inc),ce2=cos(inc);vec2 qq=vec2(dF.x,dot(dF,vec3(0.0,ce2,se2)))/max(dot(dF,vec3(0.0,-se2,ce2)),0.25)*(8.0/0.74)*rc;su=mix(su,hole+vec2(qq.x/asp,-qq.y),hiIn*0.3);}
-bgc=mix(bgc,vec3(0.03,0.012,0.04),hi);vec3 col=bgc*(1.0-sh*amt*(1.0-hi));
+bgc=mix(bgc,vec3(0.03,0.012,0.04),hi*(1.0-smoothstep(0.3,0.85,str)));vec3 col=bgc*(1.0-sh*amt*(1.0-hi));
 vec4 gb=texture2D(texB,su);float inbB=step(0.0,su.x)*step(su.x,1.0)*step(0.0,su.y)*step(su.y,1.0);
 col=mix(col,gb.rgb*mix(1.0,mix(0.55,1.0,smoothstep(1.0,6.0,rn)),hiIn),gb.a*inbB*mix(mix(1.0,smoothstep(0.97,1.04,rn),amt),1.0,hi));
 float fo=1.0-smoothstep(2.5,6.5,rn);col=mix(col,col*mix(1.0,M.a,fo)+M.rgb*amt*fo,hiIn);

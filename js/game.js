@@ -1107,15 +1107,15 @@ float ds=clamp(min(0.1*r,abs(y)*0.5+th*0.35),0.018,0.45);
 dir=normalize(dir-pos/(r*r*r)*ds);pos+=dir*ds;
 y=dot(pos,nm);xz=vec2(dot(pos,e1),dot(pos,e2));rr=length(xz);th=0.02+0.011*rr;
 float vert=exp(-y*y/(th*th));
-if(vert>0.02&&rr>RIN&&rr<ROUT){float t=pow(RIN/rr,0.72);
+if(vert>0.02&&rr>RIN&&rr<ROUT){float t=pow(RIN/rr,0.62);
 float ang=atan(xz.y,xz.x);float rot=ph*(0.45+0.5/(rr+0.6));float swirl=vn(vec2((ang+rot)*3.0,rr*5.0+fp*0.1));
-float bands=0.84+0.16*sin(rr*10.0+1.1*sin(rr*3.0));
+float bands=0.8+0.2*sin(rr*13.0+1.1*sin(rr*3.0));
 float prof=smoothstep(RIN,RIN+0.15,rr)*(1.0-smoothstep(3.5,ROUT,rr))*bands*(0.88+0.12*swirl);
 float dens=vert*prof*16.0;float al=1.0-exp(-dens*ds);
 vec3 vw=(-xz.y*e1+xz.x*e2)/max(rr,0.01);float bt=min(0.42*sqrt(1.45/rr),0.45);float dop=1.0/(1.0-bt*dot(vw,-dir));
-vec3 ec=dcol(t*(0.8+0.3*dop))*(0.22+2.3*t*t*t+0.55*t)*pow(dop,2.0)*1.05;
+vec3 ec=dcol(t*(0.8+0.3*dop))*(0.3+2.9*t*t*t+0.7*t)*pow(dop,2.0)*1.3;
 em+=Tr*al*ec;Tr*=1.0-al;if(Tr<0.01)break;}}
-float ring=exp(-abs(minR-1.09)*60.0)*step(cap,0.5);em+=vec3(1.0,0.95,0.85)*ring*1.4*Tr;
+float ring=exp(-abs(minR-1.09)*90.0)*step(cap,0.5);em+=vec3(1.0,0.97,0.9)*ring*4.0*Tr;
 if(cap>0.5)Tr=0.0;dirO=dir;return vec4(em,Tr);}
 void main(){vec2 uv=vec2(v.x,1.0-v.y);vec2 p=(uv-hole)*vec2(asp,1.0);p.y=-p.y;p/=1.0+suck*2.5;float r=length(p)+1e-4;
 float E2=rc*rc*1.1*amt*amt;vec2 q=p*(1.0-E2/(r*r));

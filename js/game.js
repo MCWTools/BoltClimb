@@ -294,7 +294,7 @@ else if(t<6.5){float core=exp(-r*r*120.0)*3.0+exp(-r*9.0)*0.8;float ax=exp(-abs(
 else if(t<7.5){float n=rdg(p*2.5+sd),n2=rdg(p*5.5+sd+3.0);float m=exp(-r*r*0.7);float fil=pow(n,6.0)*0.9+pow(n2,7.0)*0.7;float nd=pow(fbm(p*9.0+sd),5.0)*8.0;c=(cm*fil*1.5+cb*fil*0.5+cb*nd*0.6)*m+cm*exp(-r*r*3.0)*0.25;}
 else if(t<8.5){for(int k=0;k<4;k++){float fk=float(k);vec2 o=(vec2(hs(vec2(fk,sd)),hs(vec2(fk+9.0,sd)))-0.5)*1.5;float sz=0.22+0.25*hs(vec2(fk+3.0,sd));vec2 e=p-o;e.y/=0.7;float re=length(e)/sz;c+=mix(cm,cb,exp(-re*2.0))*exp(-pow(re,0.5)*3.0)*1.1;}c+=cm*exp(-r*r*2.0)*0.12;}
 else if(t<10.5){float an=atan(p.y,p.x);float wob=(fbm(p*2.4+sd)-0.5)*3.2;float stm=pow(rdg(vec2(an*1.9+wob+r*1.2,r*1.6)+sd),5.0)*exp(-r*1.15)+0.55*pow(rdg(vec2(an*3.4-wob,r*2.4)+sd+7.0),6.0)*exp(-r*1.6);
-vec2 cg=p*30.0;vec2 cid=floor(cg),cf=fract(cg);float hh=hs(cid+sd);float dens=stm*1.25+0.05*exp(-r*0.8);if(hh<dens){vec2 of=vec2(hs(cid+1.7+sd),hs(cid+8.3+sd))*0.6+0.2;float dd=length(cf-of);float br=0.5+0.9*hs(cid+4.1);c+=mix(cb,cm,exp(-r*2.2))*smoothstep(0.26,0.0,dd)*br*2.0;}
+vec2 cg=p*30.0;vec2 cid=floor(cg),cf=fract(cg);float hh=hs(cid+sd);float dens=stm*0.75+0.015*exp(-r*0.8);if(hh<dens){vec2 of=vec2(hs(cid+1.7+sd),hs(cid+8.3+sd))*0.6+0.2;float dd=length(cf-of);float br=0.5+0.9*hs(cid+4.1);c+=mix(cb,cm,exp(-r*2.2))*smoothstep(0.26,0.0,dd)*br*2.0;}
 c+=mix(cm,cb,smoothstep(0.0,0.9,r))*stm*0.55+cm*exp(-r*r*26.0)*1.0+vec3(1.0,0.9,0.75)*exp(-r*r*220.0)*1.5+cb*pow(fbm(p*5.0+sd),4.0)*stm*2.0;}
 else{float by=p.y+0.15*sin(p.x*3.0+sd);float band=exp(-pow(by/0.14,2.0))*(0.55+0.7*fbm(vec2(p.x*5.0,p.y*10.0)+sd));float bulge=exp(-(pow((p.x-0.35)/0.25,2.0)+pow(by/0.2,2.0)))*1.4;float lane=smoothstep(0.45,0.7,fbm(vec2(p.x*7.0,by*22.0)+sd+4.0))*0.6;c=(cm*band*1.4+cb*bulge)*(1.0-lane)*smoothstep(1.2,0.5,abs(p.x));}
 float fade=1.0-smoothstep(1.35,2.2,r);col+=c*fade*h.y;}
@@ -305,12 +305,12 @@ function gxInit(){try{gxc=document.createElement('canvas');gxc.width=Math.max(64
 const pr=GX.createProgram();GX.attachShader(pr,mk(GX.VERTEX_SHADER,'attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}'));GX.attachShader(pr,mk(GX.FRAGMENT_SHADER,GXF));GX.linkProgram(pr);if(!GX.getProgramParameter(pr,GX.LINK_STATUS))throw new Error('link');GX.useProgram(pr);
 const bf=GX.createBuffer();GX.bindBuffer(GX.ARRAY_BUFFER,bf);GX.bufferData(GX.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),GX.STATIC_DRAW);const al=GX.getAttribLocation(pr,'a');GX.enableVertexAttribArray(al);GX.vertexAttribPointer(al,2,GX.FLOAT,false,0,0);
 for(const n of['uG','uH','uC','uD','uT','uS','uRes'])GXU[n]=GX.getUniformLocation(pr,n)}catch(e){gxFail=true;GX=null;console.warn('gx',e)}}
-const GXW={spiral:72,elliptical:56,ring:64,irregular:52,nebula:96,globular:44,quasar:48,web:120,group:72,mw:160,super:170},GXT={spiral:0,elliptical:1,ring:2,irregular:3,nebula:4,globular:5,quasar:6,web:7,group:8,mw:9,super:10};
+const GXW={spiral:72,elliptical:56,ring:64,irregular:52,nebula:96,globular:44,quasar:48,web:120,group:72,mw:160,super:100},GXT={spiral:0,elliptical:1,ring:2,irregular:3,nebula:4,globular:5,quasar:6,web:7,group:8,mw:9,super:10};
 const gxA=new Float32Array(48),gxB=new Float32Array(48),gxC=new Float32Array(48),gxD=new Float32Array(48);
 function drawSky(h,rf){if(rf<ZS[6]-70)return;if(!SKY.length)buildSky();if(!GX&&!gxFail&&GFX!=='low')gxInit();
 if(!GX||GFX==='low'){for(const o of SKY){const y=VH*0.6+(h+o.wy)*o.p,w0=(o.spr?o.spr.width:80)*o.sc;if(y<-w0||y>VH+w0)continue;if(!o.spr){if(skyGen>=1)continue;skyGen++;skySpr(o)}skyGen=0;const im=o.spr,w=im.width*o.sc*0.5,hg=im.height*o.sc*0.5;cx.save();cx.globalAlpha=o.a;cx.translate(Math.round(o.x*VW),Math.round(y));if(o.rot)cx.rotate(o.rot);cx.drawImage(im,-w/2,-hg/2,w,hg);cx.restore()}cx.globalAlpha=1;return}
 let n=0;gxA.fill(0);gxB.fill(0);for(const o of SKY){if(n>=12)break;const y=VH*0.6+(h+o.wy)*o.p,w=(GXW[o.t]||72)*o.sc*0.5,R=w*(o.t==='mw'?0.5:0.68);if(y<-R*1.5||y>VH+R*1.5)continue;const px=o.x*VW;if(px<-R*1.5||px>VW+R*1.5)continue;const pl=PAL[o.t==='web'?['blue','violet','teal'][o.sd%3]:o.pal],cm=hexc(pl[2]),cb=hexc(pl[4]),i4=n*4;
-gxA[i4]=px;gxA[i4+1]=y;gxA[i4+2]=R;gxA[i4+3]=(o.sd%977)*0.37;gxB[i4]=GXT[o.t]===undefined?4:GXT[o.t];gxB[i4+1]=Math.min(1.2,o.a*1.05);gxB[i4+2]=o.t==='mw'?-0.38:(o.rot||0);gxB[i4+3]=0;gxC[i4]=cm[0];gxC[i4+1]=cm[1];gxC[i4+2]=cm[2];gxC[i4+3]=1;gxD[i4]=cb[0];gxD[i4+1]=cb[1];gxD[i4+2]=cb[2];gxD[i4+3]=1;n++}
+gxA[i4]=px;gxA[i4+1]=y;gxA[i4+2]=R;gxA[i4+3]=(o.sd%977)*0.37;gxB[i4]=GXT[o.t]===undefined?4:GXT[o.t];gxB[i4+1]=Math.min(1.2,o.a*1.05)*(o.t==='super'?0.7:1);gxB[i4+2]=o.t==='mw'?-0.38:(o.rot||0);gxB[i4+3]=0;gxC[i4]=cm[0];gxC[i4+1]=cm[1];gxC[i4+2]=cm[2];gxC[i4+3]=1;gxD[i4]=cb[0];gxD[i4+1]=cb[1];gxD[i4+2]=cb[2];gxD[i4+3]=1;n++}
 if(!n)return;const tw=Math.round(VW/2),th=Math.round(VH/2);if(gxc.width!==tw||gxc.height!==th){gxc.width=tw;gxc.height=th}GX.viewport(0,0,gxc.width,gxc.height);GX.uniform4fv(GXU.uG,gxA);GX.uniform4fv(GXU.uH,gxB);GX.uniform4fv(GXU.uC,gxC);GX.uniform4fv(GXU.uD,gxD);GX.uniform1f(GXU.uT,T);GX.uniform1f(GXU.uS,VW/gxc.width);GX.uniform2f(GXU.uRes,gxc.width,gxc.height);GX.drawArrays(GX.TRIANGLE_STRIP,0,4);
 cx.save();cx.globalCompositeOperation='lighter';cx.imageSmoothingEnabled=true;cx.globalAlpha=1;cx.drawImage(gxc,0,0,VW,VH);cx.restore()}
 const BODY={};
@@ -1172,7 +1172,7 @@ vec3 bgc=mix(vec3(0.035,0.012,0.045),vec3(0.09,0.025,0.04),smoothstep(1.0,0.0,r)
 float rn=r/rc,s=max(sin(inc),0.24);vec2 dq=vec2(p.x/rc,p.y/(rc*s));float R=length(dq)+1e-3;float phi=atan(dq.y,dq.x);
 float nearM=(1.0-smoothstep(-0.12,0.04,p.y/rc))*(1.0-smoothstep(0.3,1.0,inc));
 float aa=max(0.01,1.2*px/rc);float sh=1.0-smoothstep(1.0-aa,1.0,rn);
-float hiIn=hi*amt*(1.0-smoothstep(8.0,9.5,rn));vec4 M=vec4(0.0,0.0,0.0,1.0);if(hiIn>0.001){vec3 dF;M=hiMarch(p/rc,dF);float se2=sin(inc),ce2=cos(inc);vec2 qq=vec2(dF.x,dot(dF,vec3(0.0,ce2,se2)))/max(dot(dF,vec3(0.0,-se2,ce2)),0.25)*(8.0/0.74)*rc;su=mix(su,hole+vec2(qq.x/asp,-qq.y),hiIn);}
+float hiIn=hi*amt*(1.0-smoothstep(8.0,9.5,rn));vec4 M=vec4(0.0,0.0,0.0,1.0);if(hiIn>0.001){vec3 dF;M=hiMarch(p/rc,dF);float se2=sin(inc),ce2=cos(inc);vec2 qq=vec2(dF.x,dot(dF,vec3(0.0,ce2,se2)))/max(dot(dF,vec3(0.0,-se2,ce2)),0.25)*(8.0/0.74)*rc;su=mix(su,hole+vec2(qq.x/asp,-qq.y),hiIn*0.3);}
 vec3 col=bgc*(1.0-sh*amt*(1.0-hiIn));
 vec4 gb=texture2D(texB,su);float inbB=step(0.0,su.x)*step(su.x,1.0)*step(0.0,su.y)*step(su.y,1.0);
 col=mix(col,gb.rgb,gb.a*inbB*mix(mix(1.0,smoothstep(0.97,1.04,rn),amt),1.0,hiIn));
